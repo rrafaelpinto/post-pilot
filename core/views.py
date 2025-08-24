@@ -96,34 +96,55 @@ def generate_post_from_topic(request, theme_id):
     topic = request.POST.get('topic')
     post_type = request.POST.get('post_type', 'simple')
     
+    # Coleta dados estruturados do tópico se disponíveis
+    topic_data = None
+    topic_hook = request.POST.get('topic_hook')
+    topic_type = request.POST.get('topic_type')
+    topic_summary = request.POST.get('topic_summary')
+    topic_cta = request.POST.get('topic_cta')
+    
+    if any([topic_hook, topic_type, topic_summary, topic_cta]):
+        topic_data = {
+            'hook': topic_hook,
+            'post_type': topic_type,
+            'summary': topic_summary,
+            'cta': topic_cta
+        }
+    
     if not topic:
         messages.error(request, 'Tópico é obrigatório.')
         return redirect('theme_detail', theme_id=theme.id)
     
     # Verifica se já existe um post deste tipo para este tema
-    existing_post = Post.objects.filter(theme=theme, post_type=post_type).first()
-    if existing_post:
-        messages.warning(request, f'Já existe um {existing_post.get_post_type_display().lower()} para este tema.')
-        return redirect('theme_detail', theme_id=theme.id)
+    #existing_post = Post.objects.filter(theme=theme, post_type=post_type).first()
+    #if existing_post:
+    #    messages.warning(request, f'Já existe um {existing_post.get_post_type_display().lower()} para este tema.')
+    #    return redirect('theme_detail', theme_id=theme.id)
     
     try:
         openai_service = OpenAIService()
-        content_data = openai_service.generate_post_content(topic, post_type, theme.title)
+        content_data = openai_service.generate_post_content(topic, post_type, theme.title, topic_data)
         
         # Cria o post
-        post = Post.objects.create(
-            theme=theme,
-            post_type=post_type,
-            title=content_data.get('title', f'Post sobre {topic}'),
-            content=content_data.get('content', ''),
-            topic=topic,
-            seo_title=content_data.get('seo_title', topic[:60]),
-            seo_description=content_data.get('seo_description', ''),
-            status='generated',
-            generated_at=timezone.now(),
-            generation_prompt=f"Tópico: {topic}, Tipo: {post_type}",
-            ai_model_used="gpt-4" if post_type == 'article' else "gpt-3.5-turbo"
-        )
+        post_data = {
+            'theme': theme,
+            'post_type': post_type,
+            'title': content_data.get('title', f'Post sobre {topic}'),
+            'content': content_data.get('content', ''),
+            'topic': topic,
+            'seo_title': content_data.get('seo_title', topic[:60]),
+            'seo_description': content_data.get('seo_description', ''),
+            'status': 'generated',
+            'generated_at': timezone.now(),
+            'generation_prompt': f"Tópico: {topic}, Tipo: {post_type}",
+            'ai_model_used': "gpt-4" if post_type == 'article' else "gpt-3.5-turbo"
+        }
+        
+        # Para artigos, adiciona o post promocional se disponível
+        if post_type == 'article' and content_data.get('promotional_post'):
+            post_data['promotional_post'] = content_data.get('promotional_post')
+        
+        post = Post.objects.create(**post_data)
         
         messages.success(request, f'{post.get_post_type_display()} gerado com sucesso!')
         

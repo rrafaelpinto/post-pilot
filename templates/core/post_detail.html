@@ -62,11 +62,28 @@
                 
                 <!-- Conteúdo principal -->
                 <div class="content-area">
-                    <h5>Conteúdo</h5>
-                    <div class="border rounded p-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Conteúdo</h5>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyPostContent()">
+                            <i class="bi bi-clipboard"></i> Copiar Conteúdo
+                        </button>
+                    </div>
+                    <div class="border rounded p-3 bg-light" id="post-content">
                         {{ post.content|linebreaks }}
                     </div>
                 </div>
+                <script>
+                function copyPostContent() {
+                    const contentElement = document.getElementById('post-content');
+                    // Remove HTML tags for plain text copy
+                    const tempElement = document.createElement('div');
+                    tempElement.innerHTML = contentElement.innerHTML;
+                    const text = tempElement.innerText;
+                    navigator.clipboard.writeText(text).then(function() {
+                        // Optionally show feedback
+                    });
+                }
+                </script>
                 
                 <!-- Área de SEO -->
                 {% if post.seo_title or post.seo_description %}

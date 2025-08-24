@@ -6,11 +6,11 @@ from .models import Theme, Post
 class ThemeAdmin(admin.ModelAdmin):
     list_display = ['title', 'posts_count', 'articles_count', 'simple_posts_count', 'is_active', 'created_at']
     list_filter = ['is_active', 'created_at', 'topics_generated_at']
-    search_fields = ['title', 'description']
+    search_fields = ['title',]
     readonly_fields = ['created_at', 'updated_at', 'topics_generated_at']
     fieldsets = (
         ('Informações Básicas', {
-            'fields': ('title', 'description', 'is_active')
+            'fields': ('title', 'is_active')
         }),
         ('Tópicos Gerados pela IA', {
             'fields': ('suggested_topics', 'topics_generated_at'),

@@ -75,6 +75,11 @@ class Post(models.Model):
     )
     title = models.CharField(max_length=200, verbose_name="Título")
     content = models.TextField(verbose_name="Conteúdo")
+    promotional_post = models.TextField(
+        blank=True,
+        verbose_name="Post Promocional",
+        help_text="Post resumido para promover artigos no LinkedIn"
+    )
     topic = models.CharField(
         max_length=200, 
         verbose_name="Tópico",

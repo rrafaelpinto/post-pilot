@@ -4,7 +4,7 @@ import json
 
 
 class OpenAIService:
-    """Serviço para integração com a API da OpenAI"""
+    """Service for integration with the OpenAI API"""
     
     def __init__(self):
         openai.api_key = settings.OPENAI_API_KEY
@@ -12,123 +12,198 @@ class OpenAIService:
     
     def generate_topics(self, theme_title):
         """
-        Primeiro agente: Gera 3-5 tópicos para postagem baseado no tema
+        First agent: Generates 3-5 structured post topics based on the theme
         """
         prompt = f"""
-        Você é um especialista em marketing de conteúdo para LinkedIn. 
-        
-        Baseado no tema: "{theme_title}"
-        
-        Gere entre 3 a 5 tópicos específicos e relevantes para criação de postagens no LinkedIn.
-        Cada tópico deve ser focado, específico e ter potencial para engajamento.
-        
-        Retorne apenas um JSON com a lista de tópicos no seguinte formato:
+        You are an expert in technical content creation for LinkedIn, focused on developers.
+
+        **Theme/Stack:** "{theme_title}"
+
+        **Target Audience:**
+        - Junior developers
+        - Senior engineers  
+        - General tech professionals
+
+        **Task:**
+        Generate 3 to 5 specific topics for weekly LinkedIn posts. Each topic should include:
+        1. **Title/Topic** - Clear and specific title
+        2. **Suggested Hook** - Catchy question or statement to start the post
+        3. **Post Type** - Type of post (tip, lesson, comparison, concept explanation, best practice, etc.)
+        4. **One-sentence Summary** - One sentence summary of the main idea
+        5. **Suggested CTA** - Engaging call to action for the end of the post
+
+        **Desired Tone:**
+        - Conversational, accessible, and direct
+        - Focused on real problems developers face
+        - Practical and applicable
+
+        Return in JSON format:
         {{
             "topics": [
-                "Tópico 1 específico e relevante",
-                "Tópico 2 específico e relevante",
-                "Tópico 3 específico e relevante"
+                {{
+                    "title": "Specific topic title",
+                    "hook": "Catchy question or statement",
+                    "post_type": "tip/lesson/comparison/concept/best_practice",
+                    "summary": "One sentence summary of the topic",
+                    "cta": "Engaging call to action"
+                }}
             ]
         }}
+
+        All prompts and generated content must be in English.
         """
         
         try:
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "Você é um especialista em marketing de conteúdo para LinkedIn. Sempre responda apenas com JSON válido."},
+                    {"role": "system", "content": "You are an expert in technical content creation for LinkedIn. Always respond only with valid JSON. Focus on practical and relevant topics for developers. All prompts and generated content must be in English."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=500
+                max_tokens=800
             )
             
-            content = response.choices[0].message.content.strip()
-            # Remove possíveis markdown code blocks
-            if content.startswith('```json'):
-                content = content[7:]
-            if content.endswith('```'):
-                content = content[:-3]
-            
-            return json.loads(content)
+            content = response.choices[0].message.content
+            if content:
+                content = content.strip()
+                # Remove possible markdown code blocks
+                if content.startswith('```json'):
+                    content = content[7:]
+                if content.endswith('```'):
+                    content = content[:-3]
+                
+                return json.loads(content)
+            else:
+                return {"topics": []}
             
         except Exception as e:
-            print(f"Erro ao gerar tópicos: {e}")
+            print(f"Error generating topics: {e}")
             return {"topics": []}
     
-    def generate_post_content(self, topic, post_type, theme_title):
+    def generate_post_content(self, topic, post_type, theme_title, topic_data=None):
         """
-        Segundo agente: Gera conteúdo da postagem baseado no tópico e template
+        Second agent: Generates post content based on the topic and template
         """
         if post_type == 'simple':
             template_prompt = """
-            Crie um post simples para LinkedIn seguindo este template:
+            Create a simple LinkedIn post following this template:
             
-            1. Hook inicial chamativo (1-2 linhas)
-            2. Desenvolvimento do tópico (2-3 parágrafos curtos)
-            3. Call to action ou pergunta para engajamento
-            4. Hashtags relevantes (3-5 hashtags)
+            1. Catchy opening hook (1-2 lines)
+            2. Topic development (2-3 short paragraphs)
+            3. Call to action or question for engagement
+            4. Relevant hashtags (3-5 hashtags)
             
-            O post deve ter no máximo 1300 caracteres e ser envolvente.
+            The post must have a maximum of 1300 characters and be engaging.
+            Tone: conversational, accessible, and direct.
             """
         else:  # article
             template_prompt = """
-            Crie um artigo para LinkedIn seguindo este template:
+            Create a comprehensive LinkedIn article following this template:
             
-            1. Título chamativo e profissional
-            2. Introdução que apresenta o problema/oportunidade
-            3. 3-4 pontos principais bem desenvolvidos
-            4. Conclusão com insights práticos
-            5. Call to action
+            **ARTICLE STRUCTURE:**
+            1. Catchy and professional title
+            2. Introduction presenting the problem/opportunity (150-200 words)
+            3. 3-4 well-developed main points with examples (600-800 words total)
+            4. Conclusion with practical insights and actionable takeaways (150-200 words)
+            5. Call to action for engagement
             
-            O artigo deve ter entre 800-1200 palavras e ser informativo e profissional.
+            **ALSO CREATE A PROMOTIONAL POST:**
+            Additionally, create a short promotional LinkedIn post (max 1300 characters) to promote this article.
+            The promotional post should:
+            - Hook readers with an intriguing question or statement
+            - Briefly tease the main value/insights of the article
+            - Include a clear call-to-action to read the full article
+            - End with relevant hashtags (3-5)
+            
+            The article should be between 1000-1500 words, informative and professional.
+            Tone: conversational, accessible, and direct.
+            """
+        
+        # Build the prompt with structured topic data if available
+        topic_context = ""
+        if topic_data and isinstance(topic_data, dict):
+            topic_context = f"""
+            **Structured topic data:**
+            - Suggested hook: "{topic_data.get('hook', '')}"
+            - Suggested post type: {topic_data.get('post_type', 'tip')}
+            - Summary: {topic_data.get('summary', '')}
+            - Suggested CTA: "{topic_data.get('cta', '')}"
+            
+            Use this information as a basis, but adapt as needed for the requested content type.
             """
         
         prompt = f"""
-        Tema geral: "{theme_title}"
-        Tópico específico: "{topic}"
-        Tipo de conteúdo: {post_type}
+        You are an expert in technical content creation for LinkedIn, focused on developers.
+
+        **General theme:** "{theme_title}"
+        **Specific topic:** "{topic}"
+        **Content type:** {post_type}
+        
+        {topic_context}
         
         {template_prompt}
         
-        Crie também:
-        - Título SEO otimizado (máx. 60 caracteres)
-        - Descrição SEO (máx. 160 caracteres)
+        **Target Audience:**
+        - Junior developers
+        - Senior engineers  
+        - General tech professionals
         
-        Retorne no formato JSON:
+        Also create:
+        - SEO optimized title (max. 60 characters)
+        - SEO description (max. 160 characters)
+        
+        **Focus on:**
+        - Real problems developers face
+        - Practical and applicable solutions
+        - Concrete examples when possible
+        
+        Return in JSON format:
         {{
-            "title": "Título do post/artigo",
-            "content": "Conteúdo completo",
-            "seo_title": "Título SEO",
-            "seo_description": "Descrição SEO"
+            "title": "Post/article title",
+            "content": "Full content (article text for articles, post text for simple posts)",
+            "promotional_post": "Short promotional post text (only for articles, omit for simple posts)",
+            "seo_title": "SEO title",
+            "seo_description": "SEO description"
         }}
+
+        All prompts and generated content must be in English.
         """
         
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4" if post_type == 'article' else "gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": f"Você é um especialista em criação de conteúdo para LinkedIn. Sempre responda apenas com JSON válido. Você está criando um {post_type}."},
+                    {"role": "system", "content": f"You are an expert in technical content creation for LinkedIn. Always respond only with valid JSON. You are creating a {post_type} for developers. All prompts and generated content must be in English."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
                 max_tokens=2000 if post_type == 'article' else 1000
             )
             
-            content = response.choices[0].message.content.strip()
-            # Remove possíveis markdown code blocks
-            if content.startswith('```json'):
-                content = content[7:]
-            if content.endswith('```'):
-                content = content[:-3]
-            
-            return json.loads(content)
+            content = response.choices[0].message.content
+            if content:
+                content = content.strip()
+                # Remove possible markdown code blocks
+                if content.startswith('```json'):
+                    content = content[7:]
+                if content.endswith('```'):
+                    content = content[:-3]
+                
+                return json.loads(content)
+            else:
+                return {
+                    "title": f"Post about {topic}",
+                    "content": f"Content about {topic} will be generated soon.",
+                    "seo_title": topic[:60],
+                    "seo_description": f"Learn more about {topic}"[:160]
+                }
             
         except Exception as e:
-            print(f"Erro ao gerar conteúdo: {e}")
+            print(f"Error generating content: {e}")
             return {
-                "title": f"Post sobre {topic}",
-                "content": f"Conteúdo sobre {topic} será gerado em breve.",
+                "title": f"Post about {topic}",
+                "content": f"Content about {topic} will be generated soon.",
                 "seo_title": topic[:60],
-                "seo_description": f"Saiba mais sobre {topic}"[:160]
+                "seo_description": f"Learn more about {topic}"[:160]
             }
