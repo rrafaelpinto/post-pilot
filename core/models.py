@@ -147,7 +147,6 @@ class Post(models.Model):
         verbose_name = "Post"
         verbose_name_plural = "Posts"
         ordering = ['-created_at']
-        unique_together = ['theme', 'post_type']  # Um tema pode ter apenas um artigo e um post simples
     
     def __str__(self):
         return f"{self.title} ({self.get_post_type_display()})"

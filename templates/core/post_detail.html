@@ -27,43 +27,14 @@
                         {{ post.get_status_display }}
                     </span>
                 </div>
-                <div class="btn-group btn-group-sm">
-                    <a href="{% url 'post_edit' post.id %}" class="btn btn-outline-primary">
-                        <i class="bi bi-pencil me-1"></i>Editar
-                    </a>
-                    {% if post.status != 'published' %}
-                        <form method="post" action="{% url 'post_publish' post.id %}" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-outline-success" onclick="return confirm('Tem certeza que deseja publicar este post?')">
-                                <i class="bi bi-send me-1"></i>Publicar
-                            </button>
-                        </form>
-                    {% endif %}
-                </div>
             </div>
             
             <div class="card-body">
                 <h1 class="card-title">{{ post.title }}</h1>
                 
-                <!-- Informações do tema e tópico -->
-                <div class="alert alert-light mb-4">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <strong>Tema:</strong> 
-                            <a href="{% url 'theme_detail' post.theme.id %}" class="text-decoration-none">
-                                {{ post.theme.title }}
-                            </a>
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Tópico:</strong> {{ post.topic }}
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Conteúdo principal -->
                 <div class="content-area">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0">Conteúdo</h5>
                         <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyPostContent()">
                             <i class="bi bi-clipboard"></i> Copiar Conteúdo
                         </button>
@@ -133,28 +104,7 @@
                             <strong>Agendado para:</strong> {{ post.scheduled_date|date:"d/m/Y H:i" }}
                         </div>
                     </div>
-                {% endif %}
-                
-                <!-- Preview para LinkedIn -->
-                <div class="mt-4">
-                    <h5>Preview LinkedIn</h5>
-                    <div class="card border-secondary">
-                        <div class="card-header bg-primary text-white">
-                            <small><i class="bi bi-linkedin me-1"></i>LinkedIn Post Preview</small>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">{{ post.title }}</h6>
-                            <p class="card-text">{{ post.content|truncatewords:50|linebreaks }}</p>
-                            {% if post.link %}
-                                <div class="border rounded p-2 bg-light mt-2">
-                                    <small class="text-muted">
-                                        <i class="bi bi-link-45deg me-1"></i>{{ post.link }}
-                                    </small>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+                {% endif %}                
             </div>
         </div>
         
@@ -196,20 +146,6 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <strong>Status:</strong>
-                    <span class="badge bg-{% if post.status == 'published' %}success{% elif post.status == 'generated' %}warning{% elif post.status == 'scheduled' %}info{% else %}secondary{% endif %}">
-                        {{ post.get_status_display }}
-                    </span>
-                </div>
-                
-                <div class="mb-3">
-                    <strong>Tipo:</strong>
-                    <span class="badge bg-{% if post.post_type == 'article' %}info{% else %}primary{% endif %}">
-                        {{ post.get_post_type_display }}
-                    </span>
-                </div>
-                
-                <div class="mb-3">
                     <strong>Tema:</strong><br>
                     <a href="{% url 'theme_detail' post.theme.id %}" class="text-decoration-none">
                         {{ post.theme.title }}
@@ -246,6 +182,12 @@
                     <a href="{% url 'post_edit' post.id %}" class="btn btn-primary">
                         <i class="bi bi-pencil me-2"></i>Editar Post
                     </a>
+                    <form method="post" action="{% url 'post_delete' post.id %}" onsubmit="return confirm('Tem certeza que deseja remover este post?')" class="mt-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="bi bi-trash me-2"></i>Remover Post
+                        </button>
+                    </form>
                     
                     {% if post.status != 'published' %}
                         <form method="post" action="{% url 'post_publish' post.id %}">

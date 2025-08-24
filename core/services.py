@@ -55,7 +55,7 @@ class OpenAIService:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",  # Modelo mais econômico e rápido para geração de tópicos
                 messages=[
                     {"role": "system", "content": "You are an expert in technical content creation for LinkedIn. Always respond only with valid JSON. Focus on practical and relevant topics for developers. All prompts and generated content must be in English."},
                     {"role": "user", "content": prompt}
@@ -172,13 +172,13 @@ class OpenAIService:
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4" if post_type == 'article' else "gpt-3.5-turbo",
+                model="gpt-4o" if post_type == 'article' else "gpt-4o-mini",  # GPT-4o para artigos, GPT-4o-mini para posts simples
                 messages=[
                     {"role": "system", "content": f"You are an expert in technical content creation for LinkedIn. Always respond only with valid JSON. You are creating a {post_type} for developers. All prompts and generated content must be in English."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=2000 if post_type == 'article' else 1000
+                max_tokens=3000 if post_type == 'article' else 1200  # Mais tokens para artigos
             )
             
             content = response.choices[0].message.content

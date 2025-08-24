@@ -137,7 +137,7 @@ def generate_post_from_topic(request, theme_id):
             'status': 'generated',
             'generated_at': timezone.now(),
             'generation_prompt': f"Tópico: {topic}, Tipo: {post_type}",
-            'ai_model_used': "gpt-4" if post_type == 'article' else "gpt-3.5-turbo"
+            'ai_model_used': "gpt-4o" if post_type == 'article' else "gpt-4o-mini"
         }
         
         # Para artigos, adiciona o post promocional se disponível
@@ -204,3 +204,19 @@ def post_publish(request, post_id):
         messages.success(request, f'Post "{post.title}" publicado com sucesso!')
     
     return redirect('post_detail', post_id=post.id)
+
+
+def post_delete(request, post_id):
+    """Exclui um post"""
+    post = get_object_or_404(Post, id=post_id)
+    
+    if request.method == 'POST':
+        post_title = post.title
+        theme_id = post.theme.id
+        post.delete()
+        
+        messages.success(request, f'Post "{post_title}" excluído com sucesso!')
+        return redirect('theme_detail', theme_id=theme_id)
+    
+    return render(request, 'core/post_delete.html', {'post': post})
+
