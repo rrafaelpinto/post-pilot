@@ -5,7 +5,6 @@ from django.utils import timezone
 class Theme(models.Model):
     """Modelo para temas de postagens"""
     title = models.CharField(max_length=200, verbose_name="Título do Tema")
-    description = models.TextField(verbose_name="Descrição")
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Criado em")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Atualizado em")
     is_active = models.BooleanField(default=True, verbose_name="Ativo")

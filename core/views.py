@@ -51,17 +51,15 @@ def theme_create(request):
     """Cria um novo tema"""
     if request.method == 'POST':
         title = request.POST.get('title')
-        description = request.POST.get('description')
         
-        if title and description:
+        if title:
             theme = Theme.objects.create(
                 title=title,
-                description=description
             )
             messages.success(request, f'Tema "{theme.title}" criado com sucesso!')
             return redirect('theme_detail', theme_id=theme.id)
         else:
-            messages.error(request, 'Título e descrição são obrigatórios.')
+            messages.error(request, 'Título é obrigatório.')
     
     return render(request, 'core/theme_create.html')
 
@@ -73,7 +71,7 @@ def generate_topics(request, theme_id):
     
     try:
         openai_service = OpenAIService()
-        topics_data = openai_service.generate_topics(theme.title, theme.description)
+        topics_data = openai_service.generate_topics(theme.title)
         
         if topics_data.get('topics'):
             theme.suggested_topics = topics_data

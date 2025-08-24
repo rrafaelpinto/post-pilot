@@ -10,7 +10,7 @@ class OpenAIService:
         openai.api_key = settings.OPENAI_API_KEY
         self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
     
-    def generate_topics(self, theme_title, theme_description):
+    def generate_topics(self, theme_title):
         """
         Primeiro agente: Gera 3-5 tópicos para postagem baseado no tema
         """
@@ -18,7 +18,6 @@ class OpenAIService:
         Você é um especialista em marketing de conteúdo para LinkedIn. 
         
         Baseado no tema: "{theme_title}"
-        Descrição: "{theme_description}"
         
         Gere entre 3 a 5 tópicos específicos e relevantes para criação de postagens no LinkedIn.
         Cada tópico deve ser focado, específico e ter potencial para engajamento.

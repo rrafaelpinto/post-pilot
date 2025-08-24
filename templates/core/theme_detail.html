@@ -1,0 +1,249 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ theme.title }} - Post Pilot{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'theme_list' %}">Temas</a></li>
+                <li class="breadcrumb-item active">{{ theme.title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">{{ theme.title }}</h2>
+                <span class="badge bg-{% if theme.is_active %}success{% else %}secondary{% endif %}">
+                    {% if theme.is_active %}Ativo{% else %}Inativo{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ theme.description }}</p>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-primary">{{ theme.posts_count }}</h5>
+                            <small class="text-muted">Total de Posts</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-info">{{ theme.articles_count }}</h5>
+                            <small class="text-muted">Artigos</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-success">{{ theme.simple_posts_count }}</h5>
+                            <small class="text-muted">Posts Simples</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex gap-2">
+                    <small class="text-muted">
+                        Criado em: {{ theme.created_at|date:"d/m/Y H:i" }}
+                    </small>
+                    {% if theme.topics_generated_at %}
+                        <small class="text-muted">
+                            | Tópicos gerados em: {{ theme.topics_generated_at|date:"d/m/Y H:i" }}
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Tópicos Sugeridos -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Tópicos Sugeridos pela IA</h5>
+                <form method="post" action="{% url 'generate_topics' theme.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        {% if theme.suggested_topics %}Regerar Tópicos{% else %}Gerar Tópicos{% endif %}
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                {% if theme.suggested_topics.topics %}
+                    <div class="row">
+                        {% for topic in theme.suggested_topics.topics %}
+                            <div class="col-12 mb-3">
+                                <div class="card border-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ forloop.counter }}. {{ topic }}</h6>
+                                        <div class="btn-group" role="group">
+                                            <form method="post" action="{% url 'generate_post_from_topic' theme.id %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="topic" value="{{ topic }}">
+                                                <input type="hidden" name="post_type" value="simple">
+                                                <button type="submit" class="btn btn-outline-primary btn-sm">
+                                                    Gerar Post Simples
+                                                </button>
+                                            </form>
+                                            <form method="post" action="{% url 'generate_post_from_topic' theme.id %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="topic" value="{{ topic }}">
+                                                <input type="hidden" name="post_type" value="article">
+                                                <button type="submit" class="btn btn-outline-info btn-sm">
+                                                    Gerar Artigo
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-lightbulb text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">Nenhum tópico gerado ainda</h5>
+                        <p class="text-muted">Clique em "Gerar Tópicos" para criar sugestões baseadas na descrição do tema.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Seção de Posts Criados -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Posts Criados</h5>
+            </div>
+            <div class="card-body">
+                {% if posts %}
+                    <div class="row">
+                        {% for post in posts %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <span class="badge bg-{% if post.post_type == 'article' %}info{% else %}primary{% endif %}">
+                                                {{ post.get_post_type_display }}
+                                            </span>
+                                            <span class="badge bg-{% if post.status == 'published' %}success{% elif post.status == 'generated' %}warning{% elif post.status == 'scheduled' %}info{% else %}secondary{% endif %}">
+                                                {{ post.get_status_display }}
+                                            </span>
+                                        </div>
+                                        <h6 class="card-title">
+                                            <a href="{% url 'post_detail' post.id %}" class="text-decoration-none">
+                                                {{ post.title }}
+                                            </a>
+                                        </h6>
+                                        <p class="card-text text-muted small">
+                                            <strong>Tópico:</strong> {{ post.topic }}
+                                        </p>
+                                        <p class="card-text">{{ post.content_preview }}</p>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <small class="text-muted">{{ post.created_at|date:"d/m/Y" }}</small>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'post_detail' post.id %}" class="btn btn-outline-primary">Ver</a>
+                                                <a href="{% url 'post_edit' post.id %}" class="btn btn-outline-secondary">Editar</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-file-text text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">Nenhum post criado ainda</h5>
+                        <p class="text-muted">Gere tópicos primeiro e depois crie posts baseados neles.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar com informações e ações -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Ações Rápidas</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if not theme.suggested_topics.topics %}
+                        <form method="post" action="{% url 'generate_topics' theme.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-lightbulb-fill me-2"></i>Gerar Tópicos com IA
+                            </button>
+                        </form>
+                    {% endif %}
+                    
+                    <a href="{% url 'post_list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-list me-2"></i>Ver Todos os Posts
+                    </a>
+                    
+                    <a href="{% url 'theme_create' %}" class="btn btn-outline-success">
+                        <i class="bi bi-plus-circle me-2"></i>Criar Novo Tema
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas do Tema -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Estatísticas</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-12 mb-2">
+                        <strong>Tópicos Disponíveis</strong>
+                        <br>
+                        <span class="badge bg-info">
+                            {% if theme.suggested_topics.topics %}{{ theme.suggested_topics.topics|length }}{% else %}0{% endif %}
+                        </span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Posts Publicados</strong>
+                        <br>
+                        <span class="badge bg-success">
+                            {{ posts|length }}
+                        </span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Status</strong>
+                        <br>
+                        <span class="badge bg-{% if theme.is_active %}success{% else %}secondary{% endif %}">
+                            {% if theme.is_active %}Ativo{% else %}Inativo{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações Técnicas -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Informações</h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <strong>ID:</strong> {{ theme.id }}<br>
+                    <strong>Criado:</strong> {{ theme.created_at|date:"d/m/Y H:i" }}<br>
+                    <strong>Modificado:</strong> {{ theme.updated_at|date:"d/m/Y H:i" }}<br>
+                    {% if theme.topics_generated_at %}
+                        <strong>Tópicos:</strong> {{ theme.topics_generated_at|date:"d/m/Y H:i" }}
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
