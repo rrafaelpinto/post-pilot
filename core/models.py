@@ -25,6 +25,12 @@ class Theme(models.Model):
         verbose_name="Status de Processamento"
     )
     
+    # Campo adicional para verificação rápida de processamento
+    is_processing = models.BooleanField(
+        default=False,
+        verbose_name="Está Processando"
+    )
+    
     # Campos para armazenar os tópicos sugeridos pela OpenAI
     suggested_topics = models.JSONField(
         null=True, 
@@ -103,6 +109,11 @@ class Post(models.Model):
         verbose_name="Post Promocional",
         help_text="Post resumido para promover artigos no LinkedIn"
     )
+    cover_image_prompt = models.TextField(
+        blank=True,
+        verbose_name="Prompt da Imagem de Capa",
+        help_text="Descrição detalhada para geração de imagem de capa do artigo"
+    )
     topic = models.CharField(
         max_length=200, 
         verbose_name="Tópico",
@@ -150,6 +161,12 @@ class Post(models.Model):
         choices=PROCESSING_STATUS_CHOICES,
         default='idle',
         verbose_name="Status de Processamento"
+    )
+    
+    # Campo adicional para verificação rápida de processamento
+    is_processing = models.BooleanField(
+        default=False,
+        verbose_name="Está Processando"
     )
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Criado em")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Atualizado em")

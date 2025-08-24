@@ -8,34 +8,60 @@ import logging
 logger = logging.getLogger(__name__)
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_topics_async(self, theme_id, user_id=None):
+def generate_topics_task(self, theme_id, user_id=None):
     """
     Tarefa assíncrona para gerar tópicos usando OpenAI
     """
+    theme = None
     try:
         theme = Theme.objects.get(id=theme_id)
         
         # Atualizar status para processando
+        theme.is_processing = True
         theme.processing_status = 'processing'
         theme.save()
         
         openai_service = OpenAIService()
-        topics_data = openai_service.generate_topics(theme.title)
+        
+        # Verificar se já existem tópicos para construir prompt apropriado
+        existing_topics = []
+        if theme.suggested_topics and theme.suggested_topics.get('topics'):
+            existing_topics = theme.suggested_topics['topics']
+            logger.info(f'Tema já possui {len(existing_topics)} tópicos. Gerando tópicos adicionais.')
+        
+        # Gerar novos tópicos (considerando os existentes)
+        topics_data = openai_service.generate_topics(theme.title, existing_topics=existing_topics)
         
         if topics_data.get('topics'):
-            theme.suggested_topics = topics_data
+            # Combinar tópicos existentes com os novos
+            if existing_topics:
+                combined_topics = existing_topics + topics_data['topics']
+                combined_data = {
+                    'topics': combined_topics,
+                    'total_count': len(combined_topics),
+                    'last_generated': timezone.now().isoformat()
+                }
+                new_topics_count = len(topics_data['topics'])
+            else:
+                combined_data = topics_data
+                new_topics_count = len(topics_data['topics'])
+            
+            theme.suggested_topics = combined_data
             theme.topics_generated_at = timezone.now()
             theme.processing_status = 'completed'
+            theme.is_processing = False  # Importante: marcar como não processando
             theme.save()
             
-            logger.info(f'Tópicos gerados com sucesso para tema {theme.title}')
+            logger.info(f'Tópicos adicionados com sucesso para tema {theme.title}. Total: {len(combined_data["topics"])}')
             return {
                 'status': 'success',
-                'message': f'{len(topics_data["topics"])} tópicos gerados com sucesso!',
-                'topics_count': len(topics_data["topics"])
+                'message': f'{new_topics_count} novos tópicos adicionados! Total: {len(combined_data["topics"])} tópicos.',
+                'topics_count': len(combined_data["topics"]),
+                'new_topics_count': new_topics_count
             }
         else:
             theme.processing_status = 'failed'
+            theme.is_processing = False  # Importante: marcar como não processando
             theme.save()
             
             logger.error(f'Falha ao gerar tópicos para tema {theme.title}')
@@ -53,6 +79,15 @@ def generate_topics_async(self, theme_id, user_id=None):
     except Exception as e:
         logger.error(f'Erro ao gerar tópicos: {str(e)}')
         
+        # Garantir que is_processing seja desmarcado mesmo em erro
+        if theme:
+            try:
+                theme.is_processing = False
+                theme.processing_status = 'failed'
+                theme.save()
+            except:
+                pass
+        
         # Tentar novamente em caso de erro
         if self.request.retries < self.max_retries:
             logger.info(f'Tentativa {self.request.retries + 1} de {self.max_retries}')
@@ -62,6 +97,7 @@ def generate_topics_async(self, theme_id, user_id=None):
         try:
             theme = Theme.objects.get(id=theme_id)
             theme.processing_status = 'failed'
+            theme.is_processing = False  # Importante: marcar como não processando
             theme.save()
         except:
             pass
@@ -73,7 +109,7 @@ def generate_topics_async(self, theme_id, user_id=None):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_post_content_async(self, theme_id, topic, post_type, topic_data=None, user_id=None):
+def generate_post_content_task(self, theme_id, topic, post_type, topic_data=None, user_id=None):
     """
     Tarefa assíncrona para gerar conteúdo de post usando OpenAI
     """
@@ -142,7 +178,7 @@ def generate_post_content_async(self, theme_id, topic, post_type, topic_data=Non
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def improve_post_content_async(self, post_id, user_id=None):
+def improve_post_content_task(self, post_id, user_id=None):
     """
     Tarefa assíncrona para melhorar conteúdo de post usando OpenAI
     """
@@ -218,4 +254,106 @@ def improve_post_content_async(self, post_id, user_id=None):
         return {
             'status': 'error',
             'message': f'Erro ao melhorar post: {str(e)}'
+        }
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def regenerate_image_prompt_task(self, post_id, user_id=None):
+    """
+    Tarefa assíncrona para regenerar prompt de imagem de capa usando OpenAI
+    """
+    try:
+        post = Post.objects.get(id=post_id)
+        
+        # Verificar se é um artigo
+        if post.post_type != 'article':
+            return {
+                'status': 'error',
+                'message': 'Apenas artigos podem ter prompt de imagem de capa.'
+            }
+        
+        # Atualizar status para processando
+        post.is_processing = True
+        post.processing_status = 'processing'
+        post.save()
+        
+        # Determinar se é geração inicial ou regeneração
+        is_first_generation = not post.cover_image_prompt
+        action_type = "gerado" if is_first_generation else "regenerado"
+        
+        openai_service = OpenAIService()
+        image_data = openai_service.regenerate_cover_image_prompt(
+            post_title=post.title,
+            topic=post.topic,
+            theme_title=post.theme.title,
+            current_prompt=post.cover_image_prompt
+        )
+        
+        if image_data.get('cover_image_prompt'):
+            # Atualizar o prompt da imagem
+            post.cover_image_prompt = image_data['cover_image_prompt']
+            post.updated_at = timezone.now()
+            post.is_processing = False
+            post.processing_status = 'completed'
+            
+            # Atualizar informações de geração
+            timestamp = timezone.now().strftime('%d/%m/%Y %H:%M')
+            if is_first_generation:
+                generation_info = f"Imagem gerada em: {timestamp}"
+            else:
+                generation_info = f"Imagem regenerada em: {timestamp}"
+            
+            if post.generation_prompt:
+                post.generation_prompt += f" | {generation_info}"
+            else:
+                post.generation_prompt = generation_info
+            
+            post.save()
+            
+            style_notes = image_data.get('style_notes', f'Prompt da imagem {action_type} com sucesso!')
+            logger.info(f'Prompt da imagem {action_type} com sucesso: {post.title}')
+            
+            return {
+                'status': 'success',
+                'message': f'Prompt da imagem {action_type}! {style_notes}',
+                'post_id': post.id,
+                'action_type': action_type,
+                'style_notes': style_notes
+            }
+        else:
+            post.is_processing = False
+            post.processing_status = 'failed'
+            post.save()
+            
+            return {
+                'status': 'error',
+                'message': f'Não foi possível {action_type.replace("do", "r")} o prompt da imagem. Tente novamente.'
+            }
+            
+    except Post.DoesNotExist:
+        logger.error(f'Post com ID {post_id} não encontrado')
+        return {
+            'status': 'error',
+            'message': 'Post não encontrado'
+        }
+    except Exception as e:
+        logger.error(f'Erro ao regenerar prompt da imagem: {str(e)}')
+        
+        # Tentar novamente em caso de erro
+        if self.request.retries < self.max_retries:
+            logger.info(f'Tentativa {self.request.retries + 1} de {self.max_retries}')
+            raise self.retry(countdown=60 * (self.request.retries + 1))
+        
+        # Atualizar status de falha após esgotar tentativas
+        try:
+            post = Post.objects.get(id=post_id)
+            post.is_processing = False
+            post.processing_status = 'failed'
+            post.save()
+        except Exception:
+            pass
+            
+        return {
+            'status': 'error',
+            'message': f'Erro ao regenerar prompt da imagem: {str(e)}'
         }

@@ -19,4 +19,9 @@ urlpatterns = [
     path('posts/<int:post_id>/publish/', views.post_publish, name='post_publish'),
     path('posts/<int:post_id>/delete/', views.post_delete, name='post_delete'),
     path('posts/<int:post_id>/improve/', views.post_improve, name='post_improve'),
+    path('posts/<int:post_id>/regenerate-image/', views.regenerate_image_prompt, name='regenerate_image_prompt'),
+    
+    # Tasks
+    path('tasks/<str:task_id>/status/', views.check_task_status, name='check_task_status'),
+    path('tasks/status/', views.check_theme_status, name='check_theme_status'),
 ]

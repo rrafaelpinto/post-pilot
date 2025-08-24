@@ -34,9 +34,10 @@ app.conf.update(
     
     # Configurações de roteamento
     task_routes={
-        'core.tasks.generate_topics_async': {'queue': 'ai_tasks'},
-        'core.tasks.generate_post_content_async': {'queue': 'ai_tasks'},
-        'core.tasks.improve_post_content_async': {'queue': 'ai_tasks'},
+        'core.tasks.generate_topics_task': {'queue': 'ai_tasks'},
+        'core.tasks.generate_post_content_task': {'queue': 'ai_tasks'},
+        'core.tasks.improve_post_content_task': {'queue': 'ai_tasks'},
+        'core.tasks.regenerate_image_prompt_task': {'queue': 'ai_tasks'},
     },
     
     # Configurações de filas

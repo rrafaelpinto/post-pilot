@@ -2,8 +2,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
 from .models import Theme, Post
 from .services import OpenAIService
+from .tasks import generate_topics_task, generate_post_content_task, improve_post_content_task, regenerate_image_prompt_task
 
 
 def dashboard(request):
@@ -66,24 +68,23 @@ def theme_create(request):
 
 @require_http_methods(["POST"])
 def generate_topics(request, theme_id):
-    """Gera tópicos para um tema usando OpenAI"""
+    """Gera tópicos para um tema usando OpenAI de forma assíncrona"""
     theme = get_object_or_404(Theme, id=theme_id)
     
-    try:
-        openai_service = OpenAIService()
-        topics_data = openai_service.generate_topics(theme.title)
-        
-        if topics_data.get('topics'):
-            theme.suggested_topics = topics_data
-            theme.topics_generated_at = timezone.now()
-            theme.save()
-            
-            messages.success(request, f'{len(topics_data["topics"])} tópicos gerados com sucesso!')
-        else:
-            messages.error(request, 'Não foi possível gerar tópicos. Tente novamente.')
-            
-    except Exception as e:
-        messages.error(request, f'Erro ao gerar tópicos: {str(e)}')
+    # Marca que está processando
+    theme.is_processing = True
+    theme.processing_status = 'processing'
+    theme.save()
+    
+    # Inicia a task assíncrona
+    task = generate_topics_task.delay(theme_id)
+    
+    # Mensagem diferente baseada se já existem tópicos
+    if theme.suggested_topics and theme.suggested_topics.get('topics'):
+        existing_count = len(theme.suggested_topics['topics'])
+        messages.info(request, f'Adicionando mais tópicos ao tema! Você já tem {existing_count} tópicos. A página será atualizada automaticamente quando novos tópicos forem gerados. (Task ID: {task.id})')
+    else:
+        messages.info(request, f'Geração de tópicos iniciada! A página será atualizada automaticamente quando concluída. (Task ID: {task.id})')
     
     return redirect('theme_detail', theme_id=theme.id)
 
@@ -115,42 +116,10 @@ def generate_post_from_topic(request, theme_id):
         messages.error(request, 'Tópico é obrigatório.')
         return redirect('theme_detail', theme_id=theme.id)
     
-    # Verifica se já existe um post deste tipo para este tema
-    #existing_post = Post.objects.filter(theme=theme, post_type=post_type).first()
-    #if existing_post:
-    #    messages.warning(request, f'Já existe um {existing_post.get_post_type_display().lower()} para este tema.')
-    #    return redirect('theme_detail', theme_id=theme.id)
+    # Inicia a task assíncrona
+    task = generate_post_content_task.delay(theme_id, topic, post_type, topic_data)
     
-    try:
-        openai_service = OpenAIService()
-        content_data = openai_service.generate_post_content(topic, post_type, theme.title, topic_data)
-        
-        # Cria o post
-        post_data = {
-            'theme': theme,
-            'post_type': post_type,
-            'title': content_data.get('title', f'Post sobre {topic}'),
-            'content': content_data.get('content', ''),
-            'topic': topic,
-            'seo_title': content_data.get('seo_title', topic[:60]),
-            'seo_description': content_data.get('seo_description', ''),
-            'status': 'generated',
-            'generated_at': timezone.now(),
-            'generation_prompt': f"Tópico: {topic}, Tipo: {post_type}",
-            'ai_model_used': "gpt-4o" if post_type == 'article' else "gpt-4o-mini"
-        }
-        
-        # Para artigos, adiciona o post promocional se disponível
-        if post_type == 'article' and content_data.get('promotional_post'):
-            post_data['promotional_post'] = content_data.get('promotional_post')
-        
-        post = Post.objects.create(**post_data)
-        
-        messages.success(request, f'{post.get_post_type_display()} gerado com sucesso!')
-        
-    except Exception as e:
-        messages.error(request, f'Erro ao gerar post: {str(e)}')
-    
+    messages.info(request, f'Geração de post iniciada! A página será atualizada automaticamente quando concluída. (Task ID: {task.id})')
     return redirect('theme_detail', theme_id=theme.id)
 
 
@@ -223,38 +192,112 @@ def post_delete(request, post_id):
 
 @require_http_methods(["POST"])
 def post_improve(request, post_id):
-    """Melhora o conteúdo de um post usando IA"""
+    """Melhora o conteúdo de um post usando IA de forma assíncrona"""
     post = get_object_or_404(Post, id=post_id)
     
-    try:
-        openai_service = OpenAIService()
-        improvement_data = openai_service.improve_post_content(
-            current_content=post.content,
-            post_title=post.title,
-            post_type=post.post_type,
-            topic=post.topic
-        )
-        
-        if improvement_data.get('improved_content'):
-            # Atualiza o conteúdo do post
-            post.content = improvement_data['improved_content']
-            post.updated_at = timezone.now()
-            
-            # Atualiza informações de geração
-            if post.generation_prompt:
-                post.generation_prompt += f" | Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
-            else:
-                post.generation_prompt = f"Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
-            
-            post.save()
-            
-            improvement_summary = improvement_data.get('improvement_summary', 'Conteúdo melhorado com sucesso!')
-            messages.success(request, f'Post melhorado! {improvement_summary}')
-        else:
-            messages.error(request, 'Não foi possível melhorar o post. Tente novamente.')
-            
-    except Exception as e:
-        messages.error(request, f'Erro ao melhorar o post: {str(e)}')
+    # Marca que está processando
+    post.is_processing = True
+    post.processing_status = 'processing'
+    post.save()
     
+    # Inicia a task assíncrona
+    task = improve_post_content_task.delay(post_id)
+    
+    messages.info(request, f'Melhoria do post iniciada! A página será atualizada automaticamente quando concluída. (Task ID: {task.id})')
+    return redirect('post_detail', post_id=post.id)
+@require_http_methods(["POST"])
+def regenerate_image_prompt(request, post_id):
+    """Gera ou regenera o prompt da imagem de capa para um artigo de forma assíncrona"""
+    post = get_object_or_404(Post, id=post_id)
+    
+    # Verificar se é um artigo
+    if post.post_type != 'article':
+        messages.error(request, 'Apenas artigos podem ter prompt de imagem de capa.')
+        return redirect('post_detail', post_id=post.id)
+    
+    # Marca que está processando
+    post.is_processing = True
+    post.processing_status = 'processing'
+    post.save()
+    
+    # Inicia a task assíncrona
+    task = regenerate_image_prompt_task.delay(post_id)
+    
+    is_first_generation = not post.cover_image_prompt
+    action_type = "geração" if is_first_generation else "regeneração"
+    
+    messages.info(request, f'{action_type.title()} do prompt da imagem iniciada! A página será atualizada automaticamente quando concluída. (Task ID: {task.id})')
     return redirect('post_detail', post_id=post.id)
 
+
+# Nova view para verificar status das tasks
+def check_task_status(request, task_id):
+    """Verifica o status de uma task do Celery"""
+    from celery.result import AsyncResult
+    
+    task_result = AsyncResult(task_id)
+    
+    response_data = {
+        'state': task_result.state,
+        'result': task_result.result if task_result.ready() else None,
+        'info': task_result.info if not task_result.ready() else None
+    }
+    
+    return JsonResponse(response_data)
+
+
+def check_theme_status(request):
+    """Verifica o status de processamento de um tema ou post"""
+    theme_id = request.GET.get('theme_id')
+    post_id = request.GET.get('post_id')
+    
+    if not theme_id and not post_id:
+        return JsonResponse({'error': 'theme_id ou post_id é obrigatório'}, status=400)
+    
+    try:
+        if theme_id:
+            # Verificar status do tema
+            theme = Theme.objects.get(id=theme_id)
+            
+            # Se está marcado como processando mas sem task há muito tempo, limpar
+            from django.utils import timezone
+            from datetime import timedelta
+            if theme.is_processing and theme.updated_at < timezone.now() - timedelta(minutes=5):
+                theme.is_processing = False
+                theme.processing_status = 'timeout'
+                theme.save()
+            
+            response_data = {
+                'theme_id': theme.id,
+                'is_processing': theme.is_processing,
+                'processing_status': getattr(theme, 'processing_status', None),
+                'status': 'processing' if theme.is_processing else 'completed',
+                'has_topics': bool(theme.suggested_topics),
+                'topics_count': len(theme.suggested_topics.get('topics', [])) if theme.suggested_topics else 0
+            }
+            
+        elif post_id:
+            # Verificar status do post
+            post = Post.objects.get(id=post_id)
+            
+            # Se está marcado como processando mas sem task há muito tempo, limpar
+            from django.utils import timezone
+            from datetime import timedelta
+            if post.is_processing and post.updated_at < timezone.now() - timedelta(minutes=5):
+                post.is_processing = False
+                post.processing_status = 'timeout'
+                post.save()
+            
+            response_data = {
+                'post_id': post.id,
+                'is_processing': post.is_processing,
+                'processing_status': getattr(post, 'processing_status', None),
+                'status': 'processing' if post.is_processing else 'completed',
+                'title': post.title,
+                'content_length': len(post.content) if post.content else 0
+            }
+        
+        return JsonResponse(response_data)
+        
+    except (Theme.DoesNotExist, Post.DoesNotExist):
+        return JsonResponse({'error': 'Item não encontrado'}, status=404)

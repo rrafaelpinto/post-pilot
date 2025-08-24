@@ -3,6 +3,21 @@
 {% block title %}{{ theme.title }} - Post Pilot{% endblock %}
 
 {% block content %}
+<!-- Indicador de processamento -->
+{% if theme.is_processing %}
+<div id="processing-banner" class="alert alert-info alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-center">
+        <div class="spinner-border spinner-border-sm me-3" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+        <div>
+            <strong>Processando...</strong> 
+            <span id="processing-message">A IA está gerando conteúdo para este tema. A página será atualizada automaticamente quando concluído.</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-12">
         <nav aria-label="breadcrumb">
@@ -68,7 +83,12 @@
                 <form method="post" action="{% url 'generate_topics' theme.id %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-primary btn-sm">
-                        {% if theme.suggested_topics %}Regerar Tópicos{% else %}Gerar Tópicos{% endif %}
+                        {% if theme.suggested_topics.topics %}
+                            <i class="bi bi-plus-circle me-1"></i>Adicionar Mais Tópicos 
+                            <span class="badge bg-white text-primary ms-1">{{ theme.suggested_topics.topics|length }}</span>
+                        {% else %}
+                            <i class="bi bi-lightbulb me-1"></i>Gerar Tópicos
+                        {% endif %}
                     </button>
                 </form>
             </div>
@@ -256,9 +276,15 @@
                     <div class="col-12 mb-2">
                         <strong>Tópicos Disponíveis</strong>
                         <br>
-                        <span class="badge bg-info">
+                        <span class="badge bg-{% if theme.suggested_topics.topics %}info{% else %}secondary{% endif %}">
                             {% if theme.suggested_topics.topics %}{{ theme.suggested_topics.topics|length }}{% else %}0{% endif %}
                         </span>
+                        {% if theme.suggested_topics.topics %}
+                            <small class="text-muted d-block mt-1">
+                                <i class="bi bi-clock me-1"></i>
+                                Última atualização: {{ theme.topics_generated_at|date:"d/m H:i" }}
+                            </small>
+                        {% endif %}
                     </div>
                     <div class="col-6">
                         <strong>Posts Publicados</strong>
@@ -296,4 +322,132 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar se há task ID na mensagem para fazer polling
+    const messages = document.querySelectorAll('.alert');
+    let taskId = null;
+    
+    // Procurar task ID nas mensagens
+    messages.forEach(function(message) {
+        const text = message.textContent;
+        const taskMatch = text.match(/Task ID: ([a-f0-9\-]+)/);
+        if (taskMatch) {
+            taskId = taskMatch[1];
+        }
+    });
+    
+    // Se há processing ou task ID, iniciar polling
+    const isProcessing = {% if theme.is_processing %}true{% else %}false{% endif %};
+    
+    if (isProcessing || taskId) {
+        startTaskPolling(taskId);
+    }
+    
+    function startTaskPolling(taskId) {
+        const pollingInterval = 3000; // 3 segundos
+        let pollCount = 0;
+        const maxPolls = 60; // Máximo 3 minutos
+        
+        console.log('Iniciando polling para task:', taskId);
+        
+        const poll = setInterval(function() {
+            pollCount++;
+            
+            // Verificar se não excedeu o limite
+            if (pollCount > maxPolls) {
+                console.log('Polling interrompido: tempo limite excedido');
+                clearInterval(poll);
+                showPollingTimeout();
+                return;
+            }
+            
+            // Fazer requisição para verificar status
+            fetch(`/tasks/status/?theme_id={{ theme.id }}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Status da task:', data);
+                    
+                    if (data.status === 'completed' || data.status === 'success') {
+                        console.log('Task concluída! Recarregando página...');
+                        clearInterval(poll);
+                        showSuccessMessage();
+                        
+                        // Recarregar página após breve delay
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 2000);
+                        
+                    } else if (data.status === 'failed' || data.status === 'error') {
+                        console.log('Task falhou:', data.error);
+                        clearInterval(poll);
+                        showErrorMessage(data.error);
+                        
+                        // Recarregar página para atualizar status
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 5000);
+                    }
+                    // Se ainda está processando, continuar polling
+                })
+                .catch(error => {
+                    console.error('Erro no polling:', error);
+                    // Continuar tentando em caso de erro de rede
+                });
+        }, pollingInterval);
+    }
+    
+    function showSuccessMessage() {
+        const banner = document.getElementById('processing-banner');
+        if (banner) {
+            banner.className = 'alert alert-success fade show';
+            banner.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill me-3 text-success"></i>
+                    <div>
+                        <strong>Concluído!</strong> 
+                        <span>O conteúdo foi gerado com sucesso. A página será atualizada em instantes.</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    function showErrorMessage(error) {
+        const banner = document.getElementById('processing-banner');
+        if (banner) {
+            banner.className = 'alert alert-danger fade show';
+            banner.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill me-3 text-danger"></i>
+                    <div>
+                        <strong>Erro!</strong> 
+                        <span>Ocorreu um erro durante o processamento: ${error || 'Erro desconhecido'}</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    function showPollingTimeout() {
+        const banner = document.getElementById('processing-banner');
+        if (banner) {
+            banner.className = 'alert alert-warning fade show';
+            banner.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-clock-fill me-3 text-warning"></i>
+                    <div>
+                        <strong>Tempo Limite!</strong> 
+                        <span>O processamento está demorando mais que o esperado. Recarregue a página para verificar o status.</span>
+                        <button onclick="window.location.reload()" class="btn btn-warning btn-sm ms-2">Recarregar</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+});
+</script>
 {% endblock %}
