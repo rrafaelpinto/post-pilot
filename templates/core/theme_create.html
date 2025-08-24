@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Criar Tema - Post Pilot{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>Criar Novo Tema</h1>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="title" class="form-label">Título do Tema</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">Descrição</label>
+                <textarea class="form-control" id="description" name="description" rows="4" required 
+                    placeholder="Descreva o tema em detalhes. Esta descrição será usada pela IA para gerar tópicos relevantes."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Criar Tema</button>
+            <a href="{% url 'theme_list' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Dicas</h5>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Use títulos claros e específicos</li>
+                    <li>Descreva o tema com detalhes para gerar melhores tópicos</li>
+                    <li>Após criar o tema, você poderá gerar tópicos com IA</li>
+                    <li>Cada tema pode ter um artigo e um post simples</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
