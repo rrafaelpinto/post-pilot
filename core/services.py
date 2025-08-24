@@ -207,3 +207,101 @@ class OpenAIService:
                 "seo_title": topic[:60],
                 "seo_description": f"Learn more about {topic}"[:160]
             }
+
+    def improve_post_content(self, current_content, post_title, post_type, topic):
+        """
+        Third agent: Improves existing post content with enhanced details, practical examples, and secure code
+        """
+        improvement_prompt = f"""
+        You are an expert technical content creator and code reviewer, specialized in creating secure, production-ready content for developers.
+
+        **TASK:** Enhance and improve the following {post_type} content with:
+
+        **ENHANCEMENT REQUIREMENTS:**
+        1. **Extend with More Details**: Add deeper explanations for each key point
+        2. **Practical Examples**: Include real-world scenarios with working code examples
+        3. **Security-First Code**: All code must be rigorously secure and follow best practices
+        4. **Error-Free Implementation**: Code should be production-ready, tested, and robust
+        5. **Technical Depth**: Explain the "why" and "how" behind each concept
+        6. **Markdown Formatting**: Use proper Markdown syntax for better readability
+
+        **CURRENT CONTENT TO IMPROVE:**
+        Title: "{post_title}"
+        Topic: "{topic}"
+        Content: "{current_content}"
+
+        **CODE QUALITY STANDARDS:**
+        - Include proper error handling
+        - Use secure coding practices (input validation, sanitization, etc.)
+        - Add comments explaining critical sections
+        - Follow language-specific best practices
+        - Include edge case handling
+        - Use meaningful variable names
+        - Implement proper logging where applicable
+
+        **FORMATTING GUIDELINES:**
+        - Use # ## ### for headers
+        - Use ```language for code blocks with proper language specification
+        - Use **bold** for emphasis
+        - Use `inline code` for technical terms
+        - Use > for important notes/warnings
+        - Use - or * for bullet points
+        - Add horizontal rules (---) between major sections
+
+        **OUTPUT STRUCTURE:**
+        {"article" if post_type == 'article' else "simple post"} should be significantly enhanced with:
+        - More comprehensive explanations
+        - Additional practical examples
+        - Security considerations
+        - Performance tips
+        - Common pitfalls to avoid
+        - Related concepts and connections
+
+        Return the improved content in JSON format:
+        {{
+            "improved_content": "Enhanced content in Markdown format with detailed explanations and secure code examples",
+            "improvement_summary": "Brief summary of key improvements made"
+        }}
+
+        **TARGET AUDIENCE:**
+        - Junior to Senior developers
+        - DevOps engineers
+        - Technical leads
+        - Security-conscious developers
+
+        All content must be in English and technically accurate.
+        """
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o",  # Use best model for content improvement
+                messages=[
+                    {"role": "system", "content": "You are an expert technical content creator and security-focused code reviewer. Always respond with valid JSON. Create production-ready, secure code examples with comprehensive explanations."},
+                    {"role": "user", "content": improvement_prompt}
+                ],
+                temperature=0.6,  # Slightly lower temperature for more focused improvements
+                max_tokens=4000  # More tokens for detailed improvements
+            )
+            
+            content = response.choices[0].message.content
+            if content:
+                content = content.strip()
+                # Remove possible markdown code blocks
+                if content.startswith('```json'):
+                    content = content[7:]
+                if content.endswith('```'):
+                    content = content[:-3]
+                
+                return json.loads(content)
+            else:
+                return {
+                    "improved_content": current_content,
+                    "improvement_summary": "Content could not be improved at this time."
+                }
+            
+        except Exception as e:
+            print(f"Error improving content: {e}")
+            return {
+                "improved_content": current_content,
+                "improvement_summary": "Content could not be improved due to an error."
+            }

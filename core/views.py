@@ -220,3 +220,41 @@ def post_delete(request, post_id):
     
     return render(request, 'core/post_delete.html', {'post': post})
 
+
+@require_http_methods(["POST"])
+def post_improve(request, post_id):
+    """Melhora o conteúdo de um post usando IA"""
+    post = get_object_or_404(Post, id=post_id)
+    
+    try:
+        openai_service = OpenAIService()
+        improvement_data = openai_service.improve_post_content(
+            current_content=post.content,
+            post_title=post.title,
+            post_type=post.post_type,
+            topic=post.topic
+        )
+        
+        if improvement_data.get('improved_content'):
+            # Atualiza o conteúdo do post
+            post.content = improvement_data['improved_content']
+            post.updated_at = timezone.now()
+            
+            # Atualiza informações de geração
+            if post.generation_prompt:
+                post.generation_prompt += f" | Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+            else:
+                post.generation_prompt = f"Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+            
+            post.save()
+            
+            improvement_summary = improvement_data.get('improvement_summary', 'Conteúdo melhorado com sucesso!')
+            messages.success(request, f'Post melhorado! {improvement_summary}')
+        else:
+            messages.error(request, 'Não foi possível melhorar o post. Tente novamente.')
+            
+    except Exception as e:
+        messages.error(request, f'Erro ao melhorar o post: {str(e)}')
+    
+    return redirect('post_detail', post_id=post.id)
+
