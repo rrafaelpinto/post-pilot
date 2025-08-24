@@ -4,10 +4,26 @@ from django.utils import timezone
 
 class Theme(models.Model):
     """Modelo para temas de postagens"""
+    
+    PROCESSING_STATUS_CHOICES = [
+        ('idle', 'Aguardando'),
+        ('processing', 'Processando'),
+        ('completed', 'Concluído'),
+        ('failed', 'Falhou'),
+    ]
+    
     title = models.CharField(max_length=200, verbose_name="Título do Tema")
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Criado em")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Atualizado em")
     is_active = models.BooleanField(default=True, verbose_name="Ativo")
+    
+    # Campo para controle de processamento assíncrono
+    processing_status = models.CharField(
+        max_length=20,
+        choices=PROCESSING_STATUS_CHOICES,
+        default='idle',
+        verbose_name="Status de Processamento"
+    )
     
     # Campos para armazenar os tópicos sugeridos pela OpenAI
     suggested_topics = models.JSONField(
@@ -59,6 +75,13 @@ class Post(models.Model):
         ('generated', 'Gerado'),
         ('published', 'Publicado'),
         ('scheduled', 'Agendado'),
+    ]
+    
+    PROCESSING_STATUS_CHOICES = [
+        ('idle', 'Aguardando'),
+        ('processing', 'Processando'),
+        ('completed', 'Concluído'),
+        ('failed', 'Falhou'),
     ]
     
     # Informações básicas
@@ -121,6 +144,12 @@ class Post(models.Model):
         choices=STATUS_CHOICES, 
         default='draft',
         verbose_name="Status"
+    )
+    processing_status = models.CharField(
+        max_length=20,
+        choices=PROCESSING_STATUS_CHOICES,
+        default='idle',
+        verbose_name="Status de Processamento"
     )
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Criado em")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Atualizado em")

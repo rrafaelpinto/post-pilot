@@ -19,3 +19,12 @@ sqlparse==0.5.3
 tqdm==4.67.1
 typing-inspection==0.4.1
 typing_extensions==4.14.1
+
+# Celery and async processing
+celery==5.3.4
+redis==5.0.1
+django-celery-beat==2.5.0
+flower==2.0.1
+
+# Markdown support
+markdown==3.5.2
