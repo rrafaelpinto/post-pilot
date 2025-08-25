@@ -157,3 +157,14 @@ CELERY_TASK_ROUTES = {
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 CELERY_WORKER_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s] %(message)s'
 CELERY_WORKER_TASK_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s][%(task_name)s(%(task_id)s)] %(message)s'
+
+# ==============================
+# AI PROVIDERS CONFIGURATION
+# ==============================
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+GROK_API_KEY = os.getenv('GROK_API_KEY', '')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+
+# Default AI provider to use (openai, grok, gemini)
+DEFAULT_AI_PROVIDER = os.getenv('DEFAULT_AI_PROVIDER', 'openai')
+DEFAULT_AI_PROVIDER='grok'

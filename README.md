@@ -1,9 +1,10 @@
-# Post Pilot - Gerador de Posts LinkedIn com IA
+# Post Pilot - Gerador de Posts LinkedIn com IA Multi-Provider
 
-Sistema Django para geração de posts e artigos no LinkedIn utilizando OpenAI API com processamento assíncrono via Celery.
+Sistema Django para geração de posts e artigos no LinkedIn utilizando **múltiplos provedores de IA** (OpenAI, Grok, Gemini) com processamento assíncrono via Celery.
 
 ## 🚀 Funcionalidades
 
+- **Suporte Multi-AI**: OpenAI, Grok (X.AI) e Google Gemini 🆕
 - **Geração de Tópicos**: IA gera 3-5 tópicos estruturados para cada tema
 - **Criação de Posts**: Gera posts simples (até 1300 caracteres) ou artigos longos
 - **Melhoria de Conteúdo**: Aprimora posts existentes com exemplos práticos e código seguro
@@ -11,11 +12,29 @@ Sistema Django para geração de posts e artigos no LinkedIn utilizando OpenAI A
 - **Interface Web Completa**: Dashboard para gerenciar temas, posts e visualizar estatísticas
 - **Renderização Markdown**: Suporte completo a Markdown nos posts gerados
 - **Monitoramento**: Interface Flower para acompanhar tarefas em tempo real
+- **Troca de Provedores**: Sistema flexível para trocar entre diferentes AIs
+
+## 🤖 Provedores de IA Suportados
+
+### OpenAI (GPT-4)
+- **Modelos**: gpt-4o, gpt-4o-mini
+- **Ponto forte**: Excelente qualidade geral, ampla compatibilidade
+- **Status**: ✅ Totalmente suportado
+
+### Grok (X.AI) 🆕
+- **Modelos**: grok-beta
+- **Ponto forte**: Conhecimento atualizado, criado pela X (Twitter)
+- **Status**: ✅ Implementado (requer acesso beta)
+
+### Google Gemini 🆕
+- **Modelos**: gemini-1.5-pro
+- **Ponto forte**: Boa integração com ecossistema Google
+- **Status**: ✅ Implementado
 
 ## 🛠 Stack Tecnológica
 
 - **Backend**: Django 5.2.5
-- **IA**: OpenAI API (GPT-4o, GPT-4o-mini)
+- **IA**: OpenAI API, Grok API, Google Gemini API
 - **Queue System**: Celery + Redis
 - **Database**: SQLite (desenvolvimento) / PostgreSQL (produção)
 - **Frontend**: Bootstrap 5.1.3
@@ -50,15 +69,24 @@ pip install django python-dotenv openai markdown
 pip install celery redis django-celery-beat flower
 ```
 
-### 4. Configuração das Variáveis de Ambiente
+### 4. Configuração das Variáveis de Ambiente 🆕
 ```bash
 cp .env.example .env
 ```
 
 Edite o arquivo `.env` com suas configurações:
 ```env
-# OpenAI Configuration
-OPENAI_API_KEY=sua_chave_da_openai_aqui
+# AI Providers Configuration
+DEFAULT_AI_PROVIDER=openai  # openai, grok, gemini
+
+# OpenAI Configuration (requerido se usar openai)
+OPENAI_API_KEY=sk-sua_chave_da_openai_aqui
+
+# Grok (X.AI) Configuration (requerido se usar grok)
+GROK_API_KEY=xai-sua_chave_do_grok_aqui
+
+# Google Gemini Configuration (requerido se usar gemini)
+GEMINI_API_KEY=sua_chave_do_gemini_aqui
 
 # Celery Configuration
 CELERY_BROKER_URL=redis://localhost:6379/0
@@ -129,6 +157,66 @@ celery -A post_pilot flower --port=5555
 - **Aplicação Web**: http://localhost:8000
 - **Admin Django**: http://localhost:8000/admin
 - **Flower (Monitoramento)**: http://localhost:5555
+
+## 🤖 Gerenciamento de Provedores de IA
+
+### Comandos de Gerenciamento
+
+#### Listar provedores disponíveis:
+```bash
+python manage.py ai_provider --list
+```
+
+#### Ver provedor atual:
+```bash
+python manage.py ai_provider --current
+```
+
+#### Trocar provedor:
+```bash
+python manage.py ai_provider --set openai   # Para OpenAI
+python manage.py ai_provider --set grok     # Para Grok (X.AI)
+python manage.py ai_provider --set gemini   # Para Google Gemini
+```
+
+#### Testar conexão:
+```bash
+python manage.py ai_provider --test openai
+python manage.py ai_provider --test grok
+python manage.py ai_provider --test gemini
+```
+
+### Como Obter Chaves de API
+
+#### OpenAI:
+1. Acesse [platform.openai.com](https://platform.openai.com/)
+2. Crie uma conta e adicione método de pagamento
+3. Vá para "API Keys" e crie uma nova chave
+4. Adicione créditos à sua conta
+
+#### Grok (X.AI):
+1. Acesse [x.ai](https://x.ai/)
+2. Solicite acesso à API (ainda em beta limitado)
+3. Aguarde aprovação da equipe X.AI
+
+#### Google Gemini:
+1. Acesse [ai.google.dev](https://ai.google.dev/)
+2. Crie um projeto no Google AI Studio
+3. Gere uma chave de API
+4. Tier gratuito disponível com limitações
+
+### Teste de Configuração
+
+Execute o script de teste incluído:
+```bash
+python test_multi_ai.py
+```
+
+Isso irá:
+- Verificar todos os provedores configurados
+- Testar conexões com APIs
+- Validar geração de tópicos
+- Mostrar status da configuração
 
 ## 📖 Como Usar
 

@@ -1,9 +1,10 @@
+import logging
+
 from celery import shared_task
 from django.utils import timezone
-from django.contrib.auth.models import User
-from .models import Theme, Post
-from .services import OpenAIService
-import logging
+
+from .models import Post, Theme
+from .services import get_default_ai_service
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ def generate_topics_task(self, theme_id, user_id=None):
         theme.processing_status = 'processing'
         theme.save()
         
-        openai_service = OpenAIService()
+        ai_service = get_default_ai_service()
         
         # Verificar se já existem tópicos para construir prompt apropriado
         existing_topics = []
@@ -30,7 +31,7 @@ def generate_topics_task(self, theme_id, user_id=None):
             logger.info(f'Tema já possui {len(existing_topics)} tópicos. Gerando tópicos adicionais.')
         
         # Gerar novos tópicos (considerando os existentes)
-        topics_data = openai_service.generate_topics(theme.title, existing_topics=existing_topics)
+        topics_data = ai_service.generate_topics(theme.title, existing_topics=existing_topics)
         
         if topics_data.get('topics'):
             # Combinar tópicos existentes com os novos
@@ -125,8 +126,8 @@ def generate_post_content_task(self, theme_id, topic, post_type, topic_data=None
                 'post_id': existing_post.id
             }
         
-        openai_service = OpenAIService()
-        content_data = openai_service.generate_post_content(topic, post_type, theme.title, topic_data)
+        ai_service = get_default_ai_service()
+        content_data = ai_service.generate_post_content(topic, post_type, theme.title, topic_data)
         
         # Criar o post
         post_data = {
@@ -189,8 +190,8 @@ def improve_post_content_task(self, post_id, user_id=None):
         post.processing_status = 'processing'
         post.save()
         
-        openai_service = OpenAIService()
-        improvement_data = openai_service.improve_post_content(
+        ai_service = get_default_ai_service()
+        improvement_data = ai_service.improve_post_content(
             current_content=post.content,
             post_title=post.title,
             post_type=post.post_type,
@@ -281,8 +282,8 @@ def regenerate_image_prompt_task(self, post_id, user_id=None):
         is_first_generation = not post.cover_image_prompt
         action_type = "gerado" if is_first_generation else "regenerado"
         
-        openai_service = OpenAIService()
-        image_data = openai_service.regenerate_cover_image_prompt(
+        ai_service = get_default_ai_service()
+        image_data = ai_service.regenerate_cover_image_prompt(
             post_title=post.title,
             topic=post.topic,
             theme_title=post.theme.title,

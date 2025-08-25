@@ -1,12 +1,17 @@
-from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
-from django.http import JsonResponse
-from .models import Theme, Post
-from .services import OpenAIService
-from .tasks import generate_topics_task, generate_post_content_task, improve_post_content_task, regenerate_image_prompt_task
 
+from .models import Post, Theme
+from .tasks import (
+    generate_post_content_task,
+    generate_topics_task,
+    improve_post_content_task,
+    regenerate_image_prompt_task,
+)
+from .services import get_default_ai_service
 
 def dashboard(request):
     """Dashboard principal com estatísticas"""
@@ -15,7 +20,8 @@ def dashboard(request):
     published_posts = Post.objects.filter(status='published').count()
     draft_posts = Post.objects.filter(status='draft').count()
     generated_posts = Post.objects.filter(status='generated').count()
-    
+    ai_service = get_default_ai_service()
+    ai_service = f'{type(ai_service).__name__}'
     recent_posts = Post.objects.order_by('-created_at')[:5]
     recent_themes = Theme.objects.filter(is_active=True).order_by('-created_at')[:5]
     
@@ -27,6 +33,7 @@ def dashboard(request):
         'generated_posts': generated_posts,
         'recent_posts': recent_posts,
         'recent_themes': recent_themes,
+        'ai_service': ai_service,
     }
     
     return render(request, 'core/dashboard.html', context)
@@ -260,8 +267,9 @@ def check_theme_status(request):
             theme = Theme.objects.get(id=theme_id)
             
             # Se está marcado como processando mas sem task há muito tempo, limpar
-            from django.utils import timezone
             from datetime import timedelta
+
+            from django.utils import timezone
             if theme.is_processing and theme.updated_at < timezone.now() - timedelta(minutes=5):
                 theme.is_processing = False
                 theme.processing_status = 'timeout'
@@ -281,8 +289,9 @@ def check_theme_status(request):
             post = Post.objects.get(id=post_id)
             
             # Se está marcado como processando mas sem task há muito tempo, limpar
-            from django.utils import timezone
             from datetime import timedelta
+
+            from django.utils import timezone
             if post.is_processing and post.updated_at < timezone.now() - timedelta(minutes=5):
                 post.is_processing = False
                 post.processing_status = 'timeout'

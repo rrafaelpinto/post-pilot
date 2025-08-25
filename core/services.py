@@ -1,21 +1,26 @@
+import json
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional
+
 import openai
 from django.conf import settings
-import json
 
 
-class OpenAIService:
-    """Service for integration with the OpenAI API"""
+class AIServiceBase(ABC):
+    """Base class for AI service providers"""
     
-    def __init__(self):
-        openai.api_key = settings.OPENAI_API_KEY
-        self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+    def __init__(self, api_key: str, model: str):
+        self.api_key = api_key
+        self.model = model
+        print(f'Using AI service provider: {type(self).__name__}')
+
+    @abstractmethod
+    def _make_request(self, messages: List[Dict], **kwargs) -> str:
+        """Make API request to the AI provider"""
+        pass
     
-    def generate_topics(self, theme_title, existing_topics=None):
-        """
-        First agent: Generates 3-5 structured post topics based on the theme
-        If existing_topics is provided, generates additional topics that complement the existing ones
-        """
-        
+    def generate_topics(self, theme_title: str, existing_topics: Optional[List] = None) -> Dict:
+        """Generate topics using the AI provider"""
         # Construir contexto sobre tópicos existentes
         existing_context = ""
         if existing_topics:
@@ -72,34 +77,23 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
                 }}
             ]
         }}
-
-        All prompts and generated content must be in English.
         """
+
+        messages = [{"role": "user", "content": prompt}]
         
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # Modelo mais econômico e rápido para geração de tópicos
-                messages=[
-                    {"role": "system", "content": "You are an expert in technical content creation for LinkedIn. Always respond only with valid JSON. Focus on practical and relevant topics for developers. All prompts and generated content must be in English."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=800
-            )
-            
-            content = response.choices[0].message.content
-            if content:
-                content = content.strip()
-                # Remove possible markdown code blocks
-                if content.startswith('```json'):
-                    content = content[7:]
-                if content.endswith('```'):
-                    content = content[:-3]
-                
-                return json.loads(content)
-            else:
-                return {"topics": []}
-            
+            response_text = self._make_request(messages)
+            return json.loads(response_text)
+        except json.JSONDecodeError:
+            # Try to extract JSON from response
+            start = response_text.find('{')
+            end = response_text.rfind('}') + 1
+            if start != -1 and end != 0:
+                try:
+                    return json.loads(response_text[start:end])
+                except json.JSONDecodeError:
+                    pass
+            return {"topics": []}
         except Exception as e:
             print(f"Error generating topics: {e}")
             return {"topics": []}
@@ -210,18 +204,13 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         All prompts and generated content must be in English.
         """
         
+        messages = [
+            {"role": "system", "content": f"You are an expert in technical content creation for LinkedIn. Always respond only with valid JSON. You are creating a {post_type} for developers. All prompts and generated content must be in English."},
+            {"role": "user", "content": prompt}
+        ]
+        
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o" if post_type == 'article' else "gpt-4o-mini",  # GPT-4o para artigos, GPT-4o-mini para posts simples
-                messages=[
-                    {"role": "system", "content": f"You are an expert in technical content creation for LinkedIn. Always respond only with valid JSON. You are creating a {post_type} for developers. All prompts and generated content must be in English."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=3000 if post_type == 'article' else 1200  # Mais tokens para artigos
-            )
-            
-            content = response.choices[0].message.content
+            content = self._make_request(messages)
             if content:
                 content = content.strip()
                 # Remove possible markdown code blocks
@@ -312,18 +301,13 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         All content must be in English and technically accurate.
         """
         
+        messages = [
+            {"role": "system", "content": "You are an expert technical content creator and security-focused code reviewer. Always respond with valid JSON. Create production-ready, secure code examples with comprehensive explanations."},
+            {"role": "user", "content": improvement_prompt}
+        ]
+        
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o",  # Use best model for content improvement
-                messages=[
-                    {"role": "system", "content": "You are an expert technical content creator and security-focused code reviewer. Always respond with valid JSON. Create production-ready, secure code examples with comprehensive explanations."},
-                    {"role": "user", "content": improvement_prompt}
-                ],
-                temperature=0.6,  # Slightly lower temperature for more focused improvements
-                max_tokens=4000  # More tokens for detailed improvements
-            )
-            
-            content = response.choices[0].message.content
+            content = self._make_request(messages)
             if content:
                 content = content.strip()
                 # Remove possible markdown code blocks
@@ -405,18 +389,13 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         Remember: NO TEXT, NO TITLES, NO WORDS in the image description!
         """
         
+        messages = [
+            {"role": "system", "content": "You are an expert visual designer and AI prompt engineer. NEVER include text in image descriptions. Always respond with valid JSON. Create detailed, text-free professional image generation prompts."},
+            {"role": "user", "content": regeneration_prompt}
+        ]
+        
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  # Sufficient for image prompt generation
-                messages=[
-                    {"role": "system", "content": "You are an expert visual designer and AI prompt engineer. NEVER include text in image descriptions. Always respond with valid JSON. Create detailed, text-free professional image generation prompts."},
-                    {"role": "user", "content": regeneration_prompt}
-                ],
-                temperature=0.8,  # Higher creativity for visual prompts
-                max_tokens=1000
-            )
-            
-            content = response.choices[0].message.content
+            content = self._make_request(messages)
             if content:
                 content = content.strip()
                 # Remove possible markdown code blocks
@@ -440,3 +419,148 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
                 "style_notes": "Error occurred during generation - using fallback visual-only prompt.",
                 "visual_elements": "Abstract shapes and symbols related to the topic"
             }
+
+
+class OpenAIService(AIServiceBase):
+    """Service for integration with the OpenAI API"""
+    
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4"):
+        super().__init__(
+            api_key=api_key or settings.OPENAI_API_KEY,
+            model=model
+        )
+        openai.api_key = self.api_key
+        self.client = openai.OpenAI(api_key=self.api_key)
+    
+    def _make_request(self, messages: List[Dict], **kwargs) -> str:
+        """Make request to OpenAI API"""
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=4000,
+            **kwargs
+        )
+        return response.choices[0].message.content
+
+
+class GrokService(AIServiceBase):
+    """Service for integration with Grok (X.AI) API"""
+    
+    def __init__(self, api_key: Optional[str] = None, model: str = "openai/gpt-oss-20b"):
+        super().__init__(
+            api_key=api_key or getattr(settings, 'GROK_API_KEY', ''),
+            model=model
+        )
+        self.base_url = "https://api.x.ai/v1"
+    
+    def _make_request(self, messages: List[Dict], **kwargs) -> str:
+        """Make request to Grok API"""
+        import requests
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 4000,
+            **kwargs
+        }
+        
+        response = requests.post(
+            f"{self.base_url}/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=120
+        )
+        response.raise_for_status()
+        
+        result = response.json()
+        return result["choices"][0]["message"]["content"]
+
+
+class GeminiService(AIServiceBase):
+    """Service for integration with Google Gemini API"""
+    
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.5-flash"):
+        super().__init__(
+            api_key=api_key or getattr(settings, 'GEMINI_API_KEY', ''),
+            model=model
+        )
+        self.base_url = "https://generativelanguage.googleapis.com/v1beta"
+    
+    def _make_request(self, messages: List[Dict], **kwargs) -> str:
+        """Make request to Gemini API"""
+        import requests
+        
+        # Convert OpenAI-style messages to Gemini format
+        gemini_messages = []
+        for msg in messages:
+            if msg["role"] == "user":
+                gemini_messages.append({
+                    "role": "user",
+                    "parts": [{"text": msg["content"]}]
+                })
+            elif msg["role"] == "assistant":
+                gemini_messages.append({
+                    "role": "model", 
+                    "parts": [{"text": msg["content"]}]
+                })
+        
+        data = {
+            "contents": gemini_messages,
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 4000,
+                **kwargs
+            }
+        }
+        
+        url = f"{self.base_url}/models/{self.model}:generateContent"
+        params = {"key": self.api_key}
+        
+        response = requests.post(
+            url,
+            params=params,
+            json=data,
+            timeout=120
+        )
+        response.raise_for_status()
+        
+        result = response.json()
+        return result["candidates"][0]["content"]["parts"][0]["text"]
+
+
+class AIServiceFactory:
+    """Factory class to create AI service instances"""
+    
+    PROVIDERS = {
+        'openai': OpenAIService,
+        'grok': GrokService,
+        'gemini': GeminiService,
+    }
+    
+    @classmethod
+    def create_service(cls, provider: str = 'openai', **kwargs) -> AIServiceBase:
+        """Create an AI service instance"""
+        if provider not in cls.PROVIDERS:
+            raise ValueError(f"Unsupported provider: {provider}. Available: {list(cls.PROVIDERS.keys())}")
+        
+        service_class = cls.PROVIDERS[provider]
+        return service_class(**kwargs)
+    
+    @classmethod
+    def get_available_providers(cls) -> List[str]:
+        """Get list of available providers"""
+        return list(cls.PROVIDERS.keys())
+
+
+# Manter compatibilidade com código existente
+def get_default_ai_service() -> AIServiceBase:
+    """Get the default AI service (can be configured via settings)"""
+    default_provider = getattr(settings, 'DEFAULT_AI_PROVIDER', 'openai')
+    return AIServiceFactory.create_service(default_provider)
