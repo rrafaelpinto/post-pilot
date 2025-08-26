@@ -8,6 +8,7 @@ from .services import get_default_ai_service
 
 logger = logging.getLogger(__name__)
 
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def generate_topics_task(self, theme_id, user_id=None):
     """

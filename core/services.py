@@ -447,7 +447,7 @@ class OpenAIService(AIServiceBase):
 class GrokService(AIServiceBase):
     """Service for integration with Grok (X.AI) API"""
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "openai/gpt-oss-20b"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "grok-beta"):
         super().__init__(
             api_key=api_key or getattr(settings, 'GROK_API_KEY', ''),
             model=model
@@ -486,7 +486,7 @@ class GrokService(AIServiceBase):
 class GeminiService(AIServiceBase):
     """Service for integration with Google Gemini API"""
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.5-flash"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-1.5-pro"):
         super().__init__(
             api_key=api_key or getattr(settings, 'GEMINI_API_KEY', ''),
             model=model

@@ -343,16 +343,43 @@ document.addEventListener('DOMContentLoaded', function() {
     // Se há processing ou task ID, iniciar polling
     const isProcessing = {% if theme.is_processing %}true{% else %}false{% endif %};
     
-    if (isProcessing || taskId) {
+    // Verificar se acabou de fazer uma submissão (via URL params ou sessionStorage)
+    const urlParams = new URLSearchParams(window.location.search);
+    const justSubmitted = urlParams.has('submitted') || sessionStorage.getItem('theme_{{ theme.id }}_polling');
+    
+    if (isProcessing || taskId || justSubmitted) {
+        console.log('Iniciando polling. Motivo:', {isProcessing, taskId, justSubmitted});
         startTaskPolling(taskId);
+        
+        // Limpar flag de submissão
+        if (justSubmitted) {
+            sessionStorage.removeItem('theme_{{ theme.id }}_polling');
+        }
     }
     
+    // Interceptar submissões de formulários para iniciar polling
+    const forms = document.querySelectorAll('form[action*="generate_topics"], form[action*="generate_post_from_topic"]');
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function() {
+            console.log('Formulário submetido, definindo flag de polling');
+            sessionStorage.setItem('theme_{{ theme.id }}_polling', 'true');
+        });
+    });
+    
     function startTaskPolling(taskId) {
-        const pollingInterval = 3000; // 3 segundos
+        const pollingInterval = 2000; // 2 segundos (mais frequente)
         let pollCount = 0;
-        const maxPolls = 60; // Máximo 3 minutos
+        const maxPolls = 90; // Máximo 3 minutos
         
-        console.log('Iniciando polling para task:', taskId);
+        // Guardar estado inicial
+        const initialTopicsCount = {{ theme.suggested_topics.topics|length|default:0 }};
+        const initialPostsCount = {{ posts|length|default:0 }};
+        
+        console.log('Iniciando polling para task:', taskId, {
+            initialTopicsCount,
+            initialPostsCount,
+            maxPolls
+        });
         
         const poll = setInterval(function() {
             pollCount++;
@@ -369,17 +396,29 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(`/tasks/status/?theme_id={{ theme.id }}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Status da task:', data);
+                    console.log(`Polling ${pollCount}/${maxPolls} - Status:`, data);
                     
-                    if (data.status === 'completed' || data.status === 'success') {
-                        console.log('Task concluída! Recarregando página...');
+                    // Verificar se houve mudanças nos dados
+                    const topicsChanged = data.topics_count > initialTopicsCount;
+                    const statusCompleted = data.status === 'completed' || data.status === 'success';
+                    const notProcessing = !data.is_processing;
+                    
+                    if ((statusCompleted && notProcessing) || topicsChanged) {
+                        console.log('Mudanças detectadas! Recarregando página...', {
+                            topicsChanged,
+                            statusCompleted,
+                            notProcessing,
+                            newTopicsCount: data.topics_count,
+                            oldTopicsCount: initialTopicsCount
+                        });
+                        
                         clearInterval(poll);
                         showSuccessMessage();
                         
                         // Recarregar página após breve delay
                         setTimeout(function() {
                             window.location.reload();
-                        }, 2000);
+                        }, 1500);
                         
                     } else if (data.status === 'failed' || data.status === 'error') {
                         console.log('Task falhou:', data.error);
@@ -389,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Recarregar página para atualizar status
                         setTimeout(function() {
                             window.location.reload();
-                        }, 5000);
+                        }, 3000);
                     }
                     // Se ainda está processando, continuar polling
                 })

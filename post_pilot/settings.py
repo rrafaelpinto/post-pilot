@@ -161,10 +161,19 @@ CELERY_WORKER_TASK_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s][%(
 # ==============================
 # AI PROVIDERS CONFIGURATION
 # ==============================
+
+# API Keys from environment variables
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 GROK_API_KEY = os.getenv('GROK_API_KEY', '')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 
-# Default AI provider to use (openai, grok, gemini)
-DEFAULT_AI_PROVIDER = os.getenv('DEFAULT_AI_PROVIDER', 'openai')
-DEFAULT_AI_PROVIDER='grok'
+# Default AI provider configuration
+# You can change this directly here or via environment variable
+# Options: 'openai', 'grok', 'gemini'
+# DEFAULT_AI_PROVIDER = os.getenv('DEFAULT_AI_PROVIDER', 'openai')
+
+# Override the default provider here if you want to force a specific one
+# Uncomment and set the desired provider:
+# DEFAULT_AI_PROVIDER = 'grok'
+# DEFAULT_AI_PROVIDER = 'gemini'
+DEFAULT_AI_PROVIDER = 'openai'
