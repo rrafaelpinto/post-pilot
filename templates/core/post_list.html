@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Posts</h1>
             <a href="{% url 'theme_list' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-2"></i>Criar Posts via Tema
+                <i class="bi bi-plus-circle me-2"></i>Create Posts via Tema
             </a>
         </div>
     </div>
@@ -42,19 +42,19 @@
                                     Todos
                                 </button>
                                 <button type="button" class="btn btn-outline-success" onclick="filterStatus('published')">
-                                    Publicados
+                                    Publisheds
                                 </button>
                                 <button type="button" class="btn btn-outline-warning" onclick="filterStatus('generated')">
-                                    Gerados
+                                    Generateds
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary" onclick="filterStatus('draft')">
-                                    Rascunhos
+                                    Drafts
                                 </button>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <h6>Buscar:</h6>
-                            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Buscar por título, conteúdo ou tópico..." onkeyup="searchPosts()">
+                            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search by title, content or topic..." onkeyup="searchPosts()">
                         </div>
                     </div>
                 </div>
@@ -129,7 +129,7 @@
                             <div class="mb-2">
                                 <small class="text-info">
                                     <i class="bi bi-calendar-event me-1"></i>
-                                    <strong>Agendado para:</strong> {{ post.scheduled_date|date:"d/m/Y H:i" }}
+                                    <strong>Scheduled para:</strong> {{ post.scheduled_date|date:"m/d/Y H:i" }}
                                 </small>
                             </div>
                         {% endif %}
@@ -140,18 +140,18 @@
                             <div>
                                 {% if post.generated_at %}
                                     <small class="text-muted">
-                                        <i class="bi bi-robot me-1"></i>Gerado em {{ post.generated_at|date:"d/m/Y H:i" }}
+                                        <i class="bi bi-robot me-1"></i>Generated em {{ post.generated_at|date:"m/d/Y H:i" }}
                                     </small>
                                 {% endif %}
                             </div>
                             <div class="btn-group btn-group-sm">
                                 <a href="{% url 'post_detail' post.id %}" class="btn btn-outline-primary">Ver</a>
-                                <a href="{% url 'post_edit' post.id %}" class="btn btn-outline-secondary">Editar</a>
+                                <a href="{% url 'post_edit' post.id %}" class="btn btn-outline-secondary">Edit</a>
                                 {% if post.status != 'published' %}
                                     <form method="post" action="{% url 'post_publish' post.id %}" class="d-inline">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-outline-success" onclick="return confirm('Tem certeza que deseja publicar este post?')">
-                                            Publicar
+                                            Publish
                                         </button>
                                     </form>
                                 {% endif %}
@@ -175,7 +175,7 @@
                         <strong>Total de Posts:</strong> {{ posts|length }}
                     </div>
                     <div class="col-md-3">
-                        <strong>Publicados:</strong> 
+                        <strong>Publisheds:</strong> 
                         {% with published_count=posts|length %}
                             {% for post in posts %}
                                 {% if post.status == 'published' %}{{ forloop.counter0|add:1 }}{% endif %}
@@ -209,12 +209,12 @@
         <div class="col-12">
             <div class="text-center py-5">
                 <i class="bi bi-file-text text-muted" style="font-size: 4rem;"></i>
-                <h3 class="text-muted mt-3">Nenhum post criado ainda</h3>
+                <h3 class="text-muted mt-3">No posts created yet</h3>
                 <p class="text-muted mb-4">
                     Crie temas e gere posts automaticamente com IA para começar.
                 </p>
                 <a href="{% url 'theme_create' %}" class="btn btn-primary btn-lg">
-                    <i class="bi bi-plus-circle me-2"></i>Criar Primeiro Tema
+                    <i class="bi bi-plus-circle me-2"></i>Create Primeiro Tema
                 </a>
             </div>
         </div>

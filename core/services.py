@@ -8,29 +8,31 @@ from django.conf import settings
 
 class AIServiceBase(ABC):
     """Base class for AI service providers"""
-    
+
     def __init__(self, api_key: str, model: str):
         self.api_key = api_key
         self.model = model
-        print(f'Using AI service provider: {type(self).__name__}')
+        print(f"Using AI service provider: {type(self).__name__}")
 
     @abstractmethod
     def _make_request(self, messages: List[Dict], **kwargs) -> str:
         """Make API request to the AI provider"""
         pass
-    
-    def generate_topics(self, theme_title: str, existing_topics: Optional[List] = None) -> Dict:
+
+    def generate_topics(
+        self, theme_title: str, existing_topics: Optional[List] = None
+    ) -> Dict:
         """Generate topics using the AI provider"""
-        # Construir contexto sobre tópicos existentes
+        # Build context about existing topics
         existing_context = ""
         if existing_topics:
             existing_titles = []
             for topic in existing_topics:
-                if isinstance(topic, dict) and 'title' in topic:
-                    existing_titles.append(topic['title'])
+                if isinstance(topic, dict) and "title" in topic:
+                    existing_titles.append(topic["title"])
                 elif isinstance(topic, str):
                     existing_titles.append(topic)
-            
+
             if existing_titles:
                 existing_context = f"""
                 
@@ -40,7 +42,7 @@ The following topics have already been suggested for this theme:
 
 Please generate NEW topics that complement these existing ones, avoiding repetition and exploring different angles of the theme.
 """
-        
+
         prompt = f"""
         You are an expert in technical content creation for LinkedIn, focused on developers.
 
@@ -53,7 +55,7 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         - General tech professionals
 
         **Task:**
-        Generate 3 to 5 {'additional' if existing_topics else ''} specific topics for weekly LinkedIn posts. Each topic should include:
+        Generate 3 to 5 {"additional" if existing_topics else ""} specific topics for weekly LinkedIn posts. Each topic should include:
         1. **Title/Topic** - Clear and specific title
         2. **Suggested Hook** - Catchy question or statement to start the post
         3. **Post Type** - Type of post (tip, lesson, comparison, concept explanation, best practice, etc.)
@@ -80,14 +82,14 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         """
 
         messages = [{"role": "user", "content": prompt}]
-        
+
         try:
             response_text = self._make_request(messages)
             return json.loads(response_text)
         except json.JSONDecodeError:
             # Try to extract JSON from response
-            start = response_text.find('{')
-            end = response_text.rfind('}') + 1
+            start = response_text.find("{")
+            end = response_text.rfind("}") + 1
             if start != -1 and end != 0:
                 try:
                     return json.loads(response_text[start:end])
@@ -97,12 +99,12 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         except Exception as e:
             print(f"Error generating topics: {e}")
             return {"topics": []}
-    
+
     def generate_post_content(self, topic, post_type, theme_title, topic_data=None):
         """
         Second agent: Generates post content based on the topic and template
         """
-        if post_type == 'simple':
+        if post_type == "simple":
             template_prompt = """
             Create a simple LinkedIn post following this template:
             
@@ -152,20 +154,20 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
             The article should be between 1500-2000 words, informative and professional.
             Tone: conversational, accessible, and direct.
             """
-        
+
         # Build the prompt with structured topic data if available
         topic_context = ""
         if topic_data and isinstance(topic_data, dict):
             topic_context = f"""
             **Structured topic data:**
-            - Suggested hook: "{topic_data.get('hook', '')}"
-            - Suggested post type: {topic_data.get('post_type', 'tip')}
-            - Summary: {topic_data.get('summary', '')}
-            - Suggested CTA: "{topic_data.get('cta', '')}"
+            - Suggested hook: "{topic_data.get("hook", "")}"
+            - Suggested post type: {topic_data.get("post_type", "tip")}
+            - Summary: {topic_data.get("summary", "")}
+            - Suggested CTA: "{topic_data.get("cta", "")}"
             
             Use this information as a basis, but adapt as needed for the requested content type.
             """
-        
+
         prompt = f"""
         You are an expert in technical content creation for LinkedIn, focused on developers.
 
@@ -203,38 +205,41 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
 
         All prompts and generated content must be in English.
         """
-        
+
         messages = [
-            {"role": "system", "content": f"You are an expert in technical content creation for LinkedIn. Always respond only with valid JSON. You are creating a {post_type} for developers. All prompts and generated content must be in English."},
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": f"You are an expert in technical content creation for LinkedIn. Always respond only with valid JSON. You are creating a {post_type} for developers. All prompts and generated content must be in English.",
+            },
+            {"role": "user", "content": prompt},
         ]
-        
+
         try:
             content = self._make_request(messages)
             if content:
                 content = content.strip()
                 # Remove possible markdown code blocks
-                if content.startswith('```json'):
+                if content.startswith("```json"):
                     content = content[7:]
-                if content.endswith('```'):
+                if content.endswith("```"):
                     content = content[:-3]
-                
+
                 return json.loads(content)
             else:
                 return {
                     "title": f"Post about {topic}",
                     "content": f"Content about {topic} will be generated soon.",
                     "seo_title": topic[:60],
-                    "seo_description": f"Learn more about {topic}"[:160]
+                    "seo_description": f"Learn more about {topic}"[:160],
                 }
-            
+
         except Exception as e:
             print(f"Error generating content: {e}")
             return {
                 "title": f"Post about {topic}",
                 "content": f"Content about {topic} will be generated soon.",
                 "seo_title": topic[:60],
-                "seo_description": f"Learn more about {topic}"[:160]
+                "seo_description": f"Learn more about {topic}"[:160],
             }
 
     def improve_post_content(self, current_content, post_title, post_type, topic):
@@ -278,13 +283,14 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         - Add horizontal rules (---) between major sections
 
         **OUTPUT STRUCTURE:**
-        {"article" if post_type == 'article' else "simple post"} should be significantly enhanced with:
+        {"article" if post_type == "article" else "simple post"} should be significantly enhanced with:
         - More comprehensive explanations
         - Additional practical examples
         - Security considerations
         - Performance tips
         - Common pitfalls to avoid
         - Related concepts and connections
+        - Relevant hashtags (8-8 relevant hashtags)
 
         Return the improved content in JSON format:
         {{
@@ -300,37 +306,42 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
 
         All content must be in English and technically accurate.
         """
-        
+
         messages = [
-            {"role": "system", "content": "You are an expert technical content creator and security-focused code reviewer. Always respond with valid JSON. Create production-ready, secure code examples with comprehensive explanations."},
-            {"role": "user", "content": improvement_prompt}
+            {
+                "role": "system",
+                "content": "You are an expert technical content creator and security-focused code reviewer. Always respond with valid JSON. Create production-ready, secure code examples with comprehensive explanations.",
+            },
+            {"role": "user", "content": improvement_prompt},
         ]
-        
+
         try:
             content = self._make_request(messages)
             if content:
                 content = content.strip()
                 # Remove possible markdown code blocks
-                if content.startswith('```json'):
+                if content.startswith("```json"):
                     content = content[7:]
-                if content.endswith('```'):
+                if content.endswith("```"):
                     content = content[:-3]
-                
+
                 return json.loads(content)
             else:
                 return {
                     "improved_content": current_content,
-                    "improvement_summary": "Content could not be improved at this time."
+                    "improvement_summary": "Content could not be improved at this time.",
                 }
-            
+
         except Exception as e:
             print(f"Error improving content: {e}")
             return {
                 "improved_content": current_content,
-                "improvement_summary": "Content could not be improved due to an error."
+                "improvement_summary": "Content could not be improved due to an error.",
             }
 
-    def regenerate_cover_image_prompt(self, post_title, topic, theme_title, current_prompt=None):
+    def regenerate_cover_image_prompt(
+        self, post_title, topic, theme_title, current_prompt=None
+    ):
         """
         Fourth agent: Regenerates cover image prompt for articles - NO TEXT VERSION
         """
@@ -345,7 +356,7 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         - Theme: "{theme_title}"
 
         **CURRENT PROMPT (if regenerating):**
-        {f'Current prompt: "{current_prompt}"' if current_prompt else 'This is the first generation.'}
+        {f'Current prompt: "{current_prompt}"' if current_prompt else "This is the first generation."}
 
         **CRITICAL RULE - NO TEXT IN IMAGE:**
         ❌ NEVER include text, titles, letters, or words in the image
@@ -388,50 +399,50 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
 
         Remember: NO TEXT, NO TITLES, NO WORDS in the image description!
         """
-        
+
         messages = [
-            {"role": "system", "content": "You are an expert visual designer and AI prompt engineer. NEVER include text in image descriptions. Always respond with valid JSON. Create detailed, text-free professional image generation prompts."},
-            {"role": "user", "content": regeneration_prompt}
+            {
+                "role": "system",
+                "content": "You are an expert visual designer and AI prompt engineer. NEVER include text in image descriptions. Always respond with valid JSON. Create detailed, text-free professional image generation prompts.",
+            },
+            {"role": "user", "content": regeneration_prompt},
         ]
-        
+
         try:
             content = self._make_request(messages)
             if content:
                 content = content.strip()
                 # Remove possible markdown code blocks
-                if content.startswith('```json'):
+                if content.startswith("```json"):
                     content = content[7:]
-                if content.endswith('```'):
+                if content.endswith("```"):
                     content = content[:-3]
-                
+
                 return json.loads(content)
             else:
                 return {
                     "cover_image_prompt": f"Abstract professional illustration representing {topic} concept through visual elements only, modern minimalist style, corporate color palette, no text, clean composition, high quality digital art",
                     "style_notes": "Could not generate new prompt at this time - using fallback visual-only prompt.",
-                    "visual_elements": "Abstract shapes and symbols related to the topic"
+                    "visual_elements": "Abstract shapes and symbols related to the topic",
                 }
-            
+
         except Exception as e:
             print(f"Error regenerating image prompt: {e}")
             return {
                 "cover_image_prompt": f"Abstract professional illustration representing {topic} concept through visual elements only, modern minimalist style, corporate color palette, no text, clean composition, high quality digital art",
                 "style_notes": "Error occurred during generation - using fallback visual-only prompt.",
-                "visual_elements": "Abstract shapes and symbols related to the topic"
+                "visual_elements": "Abstract shapes and symbols related to the topic",
             }
 
 
 class OpenAIService(AIServiceBase):
     """Service for integration with the OpenAI API"""
-    
+
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4"):
-        super().__init__(
-            api_key=api_key or settings.OPENAI_API_KEY,
-            model=model
-        )
+        super().__init__(api_key=api_key or settings.OPENAI_API_KEY, model=model)
         openai.api_key = self.api_key
         self.client = openai.OpenAI(api_key=self.api_key)
-    
+
     def _make_request(self, messages: List[Dict], **kwargs) -> str:
         """Make request to OpenAI API"""
         response = self.client.chat.completions.create(
@@ -439,120 +450,106 @@ class OpenAIService(AIServiceBase):
             messages=messages,
             temperature=0.7,
             max_tokens=4000,
-            **kwargs
+            **kwargs,
         )
         return response.choices[0].message.content
 
 
 class GrokService(AIServiceBase):
     """Service for integration with Grok (X.AI) API"""
-    
-    def __init__(self, api_key: Optional[str] = None, model: str = "openai/gpt-oss-20b"):
+
+    def __init__(self, api_key: Optional[str] = None, model: str = "grok-beta"):
         super().__init__(
-            api_key=api_key or getattr(settings, 'GROK_API_KEY', ''),
-            model=model
+            api_key=api_key or getattr(settings, "GROK_API_KEY", ""), model=model
         )
         self.base_url = "https://api.x.ai/v1"
-    
+
     def _make_request(self, messages: List[Dict], **kwargs) -> str:
         """Make request to Grok API"""
         import requests
-        
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-        
+
         data = {
             "model": self.model,
             "messages": messages,
             "temperature": 0.7,
             "max_tokens": 4000,
-            **kwargs
+            **kwargs,
         }
-        
+
         response = requests.post(
-            f"{self.base_url}/chat/completions",
-            headers=headers,
-            json=data,
-            timeout=120
+            f"{self.base_url}/chat/completions", headers=headers, json=data, timeout=120
         )
         response.raise_for_status()
-        
+
         result = response.json()
         return result["choices"][0]["message"]["content"]
 
 
 class GeminiService(AIServiceBase):
     """Service for integration with Google Gemini API"""
-    
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.5-flash"):
+
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-1.5-pro"):
         super().__init__(
-            api_key=api_key or getattr(settings, 'GEMINI_API_KEY', ''),
-            model=model
+            api_key=api_key or getattr(settings, "GEMINI_API_KEY", ""), model=model
         )
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-    
+
     def _make_request(self, messages: List[Dict], **kwargs) -> str:
         """Make request to Gemini API"""
         import requests
-        
+
         # Convert OpenAI-style messages to Gemini format
         gemini_messages = []
         for msg in messages:
             if msg["role"] == "user":
-                gemini_messages.append({
-                    "role": "user",
-                    "parts": [{"text": msg["content"]}]
-                })
+                gemini_messages.append(
+                    {"role": "user", "parts": [{"text": msg["content"]}]}
+                )
             elif msg["role"] == "assistant":
-                gemini_messages.append({
-                    "role": "model", 
-                    "parts": [{"text": msg["content"]}]
-                })
-        
+                gemini_messages.append(
+                    {"role": "model", "parts": [{"text": msg["content"]}]}
+                )
+
         data = {
             "contents": gemini_messages,
-            "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 4000,
-                **kwargs
-            }
+            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 4000, **kwargs},
         }
-        
+
         url = f"{self.base_url}/models/{self.model}:generateContent"
         params = {"key": self.api_key}
-        
-        response = requests.post(
-            url,
-            params=params,
-            json=data,
-            timeout=120
-        )
+
+        response = requests.post(url, params=params, json=data, timeout=120)
         response.raise_for_status()
-        
+
         result = response.json()
         return result["candidates"][0]["content"]["parts"][0]["text"]
 
 
 class AIServiceFactory:
     """Factory class to create AI service instances"""
-    
+
     PROVIDERS = {
-        'openai': OpenAIService,
-        'grok': GrokService,
-        'gemini': GeminiService,
+        "openai": OpenAIService,
+        "grok": GrokService,
+        "gemini": GeminiService,
     }
-    
+
     @classmethod
-    def create_service(cls, provider: str = 'openai', **kwargs) -> AIServiceBase:
+    def create_service(cls, provider: str = "openai", **kwargs) -> AIServiceBase:
         """Create an AI service instance"""
         if provider not in cls.PROVIDERS:
-            raise ValueError(f"Unsupported provider: {provider}. Available: {list(cls.PROVIDERS.keys())}")
-        
+            raise ValueError(
+                f"Unsupported provider: {provider}. Available: {list(cls.PROVIDERS.keys())}"
+            )
+
         service_class = cls.PROVIDERS[provider]
         return service_class(**kwargs)
-    
+
     @classmethod
     def get_available_providers(cls) -> List[str]:
         """Get list of available providers"""
@@ -562,5 +559,5 @@ class AIServiceFactory:
 # Manter compatibilidade com código existente
 def get_default_ai_service() -> AIServiceBase:
     """Get the default AI service (can be configured via settings)"""
-    default_provider = getattr(settings, 'DEFAULT_AI_PROVIDER', 'openai')
+    default_provider = getattr(settings, "DEFAULT_AI_PROVIDER", "openai")
     return AIServiceFactory.create_service(default_provider)
