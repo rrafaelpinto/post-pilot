@@ -1,92 +1,94 @@
-# Post Pilot - Gerador de Posts LinkedIn com IA Multi-Provider
+# Post Pilot - Multi-AI LinkedIn Content Generator
 
-Sistema Django para geração de posts e artigos no LinkedIn utilizando **múltiplos provedores de IA** (OpenAI, Grok, Gemini) com processamento assíncrono via Celery.
+A comprehensive Django application for generating LinkedIn posts and articles using multiple AI providers. Choose between OpenAI, Grok (X.AI), and Google Gemini for content generation with asynchronous processing via Celery.
 
-## 🚀 Funcionalidades
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![Django](https://img.shields.io/badge/Django-5.2.5-green)
+![AI Providers](https://img.shields.io/badge/AI-OpenAI%20|%20Grok%20|%20Gemini-orange)
+![Celery](https://img.shields.io/badge/Celery-Async-red)
 
-- **Suporte Multi-AI**: OpenAI, Grok (X.AI) e Google Gemini 🆕
-- **Geração de Tópicos**: IA gera 3-5 tópicos estruturados para cada tema
-- **Criação de Posts**: Gera posts simples (até 1300 caracteres) ou artigos longos
-- **Melhoria de Conteúdo**: Aprimora posts existentes com exemplos práticos e código seguro
-- **Processamento Assíncrono**: Utiliza Celery + Redis para chamadas de API não bloqueantes
-- **Interface Web Completa**: Dashboard para gerenciar temas, posts e visualizar estatísticas
-- **Renderização Markdown**: Suporte completo a Markdown nos posts gerados
-- **Monitoramento**: Interface Flower para acompanhar tarefas em tempo real
-- **Troca de Provedores**: Sistema flexível para trocar entre diferentes AIs
+## 🚀 Features
 
-## 🤖 Provedores de IA Suportados
+- **Multi-AI Provider Support**: OpenAI, Grok (X.AI), and Google Gemini
+- **Topic Generation**: AI generates 3-5 structured topics for each theme
+- **Content Creation**: Generate simple posts (up to 1300 characters) or long-form articles
+- **Content Improvement**: Enhance existing posts with practical examples and secure code
+- **Asynchronous Processing**: Uses Celery + Redis for non-blocking API calls
+- **Complete Web Interface**: Dashboard to manage themes, posts, and view statistics
+- **Markdown Rendering**: Full Markdown support in generated posts
+- **Real-time Monitoring**: Flower interface to track tasks in real-time
+- **Flexible Provider Switching**: Dynamic AI provider configuration
 
-### OpenAI (GPT-4)
-- **Modelos**: gpt-4o, gpt-4o-mini
-- **Ponto forte**: Excelente qualidade geral, ampla compatibilidade
-- **Status**: ✅ Totalmente suportado
+## 🤖 Supported AI Providers
 
-### Grok (X.AI) 🆕
-- **Modelos**: grok-beta
-- **Ponto forte**: Conhecimento atualizado, criado pela X (Twitter)
-- **Status**: ✅ Implementado (requer acesso beta)
+| Provider | Model | Strengths | Status |
+|----------|-------|-----------|--------|
+| **OpenAI** | GPT-4o, GPT-4o-mini | Excellent overall quality, wide compatibility | ✅ Fully supported |
+| **Grok (X.AI)** | grok-beta | Updated knowledge, created by X (Twitter) | ✅ Implemented (beta access required) |
+| **Google Gemini** | gemini-1.5-pro | Good Google ecosystem integration | ✅ Implemented |
 
-### Google Gemini 🆕
-- **Modelos**: gemini-1.5-pro
-- **Ponto forte**: Boa integração com ecossistema Google
-- **Status**: ✅ Implementado
-
-## 🛠 Stack Tecnológica
+## 🛠 Technology Stack
 
 - **Backend**: Django 5.2.5
-- **IA**: OpenAI API, Grok API, Google Gemini API
+- **AI APIs**: OpenAI, Grok (X.AI), Google Gemini
 - **Queue System**: Celery + Redis
-- **Database**: SQLite (desenvolvimento) / PostgreSQL (produção)
+- **Database**: SQLite (development) / PostgreSQL (production)
 - **Frontend**: Bootstrap 5.1.3
-- **Monitoramento**: Flower
-- **Markdown**: Python-Markdown
+- **Monitoring**: Flower
+- **Content**: Python-Markdown
+- **Language**: 100% English interface
 
-## 📋 Pré-requisitos
+## 📋 Prerequisites
 
 - Python 3.11+
 - Redis Server
-- Conta na OpenAI com API Key
+- At least one AI provider API key (OpenAI, Grok, or Gemini)
 
-## 🔧 Instalação e Configuração
+## 🔧 Installation & Setup
 
-### 1. Clone o Repositório
+### 1. Clone Repository
+
 ```bash
 git clone <repository-url>
 cd post-pilot
 ```
 
-### 2. Configuração do Ambiente Virtual
+### 2. Virtual Environment Setup
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
-# ou
+# or
 .venv\Scripts\activate     # Windows
 ```
 
-### 3. Instalação das Dependências
+### 3. Install Dependencies
+
 ```bash
 pip install django python-dotenv openai markdown
-pip install celery redis django-celery-beat flower
+pip install celery redis django-celery-beat flower google-generativeai
 ```
 
-### 4. Configuração das Variáveis de Ambiente 🆕
+### 4. Environment Configuration
+
 ```bash
 cp .env.example .env
 ```
 
-Edite o arquivo `.env` com suas configurações:
+Edit the `.env` file with your configuration:
+
 ```env
 # AI Providers Configuration
 DEFAULT_AI_PROVIDER=openai  # openai, grok, gemini
 
-# OpenAI Configuration (requerido se usar openai)
-OPENAI_API_KEY=sk-sua_chave_da_openai_aqui
+# OpenAI Configuration (required if using openai)
+OPENAI_API_KEY=sk-your_openai_key_here
 
-# Grok (X.AI) Configuration (requerido se usar grok)
-GROK_API_KEY=xai-sua_chave_do_grok_aqui
+# Grok (X.AI) Configuration (required if using grok)
+GROK_API_KEY=xai-your_grok_key_here
 
-# Google Gemini Configuration (requerido se usar gemini)
-GEMINI_API_KEY=sua_chave_do_gemini_aqui
+# Google Gemini Configuration (required if using gemini)
+GEMINI_API_KEY=your_gemini_key_here
 
 # Celery Configuration
 CELERY_BROKER_URL=redis://localhost:6379/0
@@ -94,12 +96,13 @@ CELERY_RESULT_BACKEND=redis://localhost:6379/0
 
 # Django Configuration
 DEBUG=True
-SECRET_KEY=sua_chave_secreta_aqui
+SECRET_KEY=your_secret_key_here
 ```
 
-### 5. Instalação e Configuração do Redis
+### 5. Redis Installation & Configuration
 
-#### Ubuntu/Debian:
+#### Ubuntu/Debian
+
 ```bash
 sudo apt update
 sudo apt install redis-server
@@ -107,231 +110,283 @@ sudo systemctl start redis-server
 sudo systemctl enable redis-server
 ```
 
-#### macOS (Homebrew):
+#### macOS (Homebrew)
+
 ```bash
 brew install redis
 brew services start redis
 ```
 
-#### Windows:
-Baixe e instale o Redis do [repositório oficial](https://github.com/microsoftarchive/redis/releases)
+#### Windows
 
-### 6. Configuração do Banco de Dados
+Download and install Redis from the [official repository](https://github.com/microsoftarchive/redis/releases)
+
+### 6. Database Setup
+
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 python manage.py createsuperuser
 ```
 
-## 🚀 Executando o Sistema
+## 🚀 Running the System
 
-### Método Recomendado: Múltiplos Terminais
+### Recommended Method: Multiple Terminals
 
-#### Terminal 1 - Django Server:
+#### Terminal 1 - Django Server
+
 ```bash
 python manage.py runserver
 ```
 
-#### Terminal 2 - Celery Worker:
+#### Terminal 2 - Celery Worker
+
 ```bash
 ./scripts/start_worker.sh
-# ou manualmente:
+# or manually:
 celery -A post_pilot worker --loglevel=info --concurrency=2 --queues=default,ai_tasks
 ```
 
-#### Terminal 3 - Celery Beat (Scheduler):
+#### Terminal 3 - Celery Beat (Scheduler)
+
 ```bash
 ./scripts/start_beat.sh
-# ou manualmente:
+# or manually:
 celery -A post_pilot beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 ```
 
-#### Terminal 4 - Flower (Monitoramento):
+#### Terminal 4 - Flower (Monitoring)
+
 ```bash
 ./scripts/start_flower.sh
-# ou manualmente:
+# or manually:
 celery -A post_pilot flower --port=5555
 ```
 
-### Acessos:
-- **Aplicação Web**: http://localhost:8000
-- **Admin Django**: http://localhost:8000/admin
-- **Flower (Monitoramento)**: http://localhost:5555
+### Access Points
 
-## 🤖 Gerenciamento de Provedores de IA
+- **Web Application**: <http://localhost:8000>
+- **Django Admin**: <http://localhost:8000/admin>
+- **Flower Monitoring**: <http://localhost:5555>
 
-### Comandos de Gerenciamento
+## 🤖 AI Provider Management
 
-#### Listar provedores disponíveis:
+### Management Commands
+
+#### List available providers
+
 ```bash
 python manage.py ai_provider --list
 ```
 
-#### Ver provedor atual:
+#### View current provider
+
 ```bash
 python manage.py ai_provider --current
 ```
 
-#### Trocar provedor:
+#### Switch provider
+
 ```bash
-python manage.py ai_provider --set openai   # Para OpenAI
-python manage.py ai_provider --set grok     # Para Grok (X.AI)
-python manage.py ai_provider --set gemini   # Para Google Gemini
+python manage.py ai_provider --set openai   # For OpenAI
+python manage.py ai_provider --set grok     # For Grok (X.AI)
+python manage.py ai_provider --set gemini   # For Google Gemini
 ```
 
-#### Testar conexão:
+#### Test connection
+
 ```bash
 python manage.py ai_provider --test openai
 python manage.py ai_provider --test grok
 python manage.py ai_provider --test gemini
 ```
 
-### Como Obter Chaves de API
+### How to Obtain API Keys
 
-#### OpenAI:
-1. Acesse [platform.openai.com](https://platform.openai.com/)
-2. Crie uma conta e adicione método de pagamento
-3. Vá para "API Keys" e crie uma nova chave
-4. Adicione créditos à sua conta
+#### OpenAI
 
-#### Grok (X.AI):
-1. Acesse [x.ai](https://x.ai/)
-2. Solicite acesso à API (ainda em beta limitado)
-3. Aguarde aprovação da equipe X.AI
+1. Visit [platform.openai.com](https://platform.openai.com/)
+2. Create an account and add payment method
+3. Go to "API Keys" and create a new key
+4. Add credits to your account
 
-#### Google Gemini:
-1. Acesse [ai.google.dev](https://ai.google.dev/)
-2. Crie um projeto no Google AI Studio
-3. Gere uma chave de API
-4. Tier gratuito disponível com limitações
+#### Grok (X.AI)
 
-### Teste de Configuração
+1. Visit [x.ai](https://x.ai/)
+2. Request API access (currently in limited beta)
+3. Wait for approval from X.AI team
 
-Execute o script de teste incluído:
+#### Google Gemini
+
+1. Visit [ai.google.dev](https://ai.google.dev/)
+2. Create a project in Google AI Studio
+3. Generate an API key
+4. Free tier available with limitations
+
+### Configuration Testing
+
+Run the included test script:
+
 ```bash
 python test_multi_ai.py
 ```
 
-Isso irá:
-- Verificar todos os provedores configurados
-- Testar conexões com APIs
-- Validar geração de tópicos
-- Mostrar status da configuração
+This will:
 
-## 📖 Como Usar
+- Verify all configured providers
+- Test API connections
+- Validate topic generation
+- Show configuration status
 
-### 1. Criar um Tema
-1. Acesse o dashboard
-2. Clique em "Criar Novo Tema"
-3. Digite o título do tema (ex: "React Hooks", "Python FastAPI", "Docker")
+## 📖 Usage Guide
 
-### 2. Gerar Tópicos
-1. Na página do tema, clique em "Gerar Tópicos"
-2. A IA criará 3-5 tópicos estruturados com hooks, resumos e CTAs
-3. O processamento é assíncrono - você pode acompanhar via Flower
+### 1. Create a Theme
 
-### 3. Criar Posts
-1. Para cada tópico, escolha:
-   - **Post Simples**: Até 1300 caracteres, otimizado para LinkedIn
-   - **Artigo**: 1000-1500 palavras + post promocional
-2. O conteúdo é gerado em formato Markdown
+1. Access the dashboard
+2. Click "Create New Theme"
+3. Enter theme title (e.g., "React Hooks", "Python FastAPI", "Docker")
 
-### 4. Melhorar Posts
-1. Na página do post, clique em "Melhorar Post"
-2. A IA expandirá o conteúdo com:
-   - Exemplos práticos de código
-   - Explicações detalhadas
-   - Considerações de segurança
-   - Boas práticas
+### 2. Generate Topics
 
-## 🔄 Arquitetura Assíncrona
+1. On the theme page, click "Generate Topics"
+2. AI will create 3-5 structured topics with hooks, summaries, and CTAs
+3. Processing is asynchronous - track via Flower
 
-### Fluxo de Processamento:
-1. **Interface Web** → Dispara tarefa Celery
-2. **Redis** → Armazena a tarefa na fila
-3. **Celery Worker** → Processa chamada à OpenAI API
-4. **Resultado** → Atualiza o banco de dados
-5. **Interface** → Exibe resultado ou status
+### 3. Create Posts
 
-### Filas Configuradas:
-- `default`: Tarefas gerais
-- `ai_tasks`: Chamadas específicas para OpenAI (isoladas)
+1. For each topic, choose:
+   - **Simple Post**: Up to 1300 characters, optimized for LinkedIn
+   - **Article**: 1000-1500 words + promotional post
+2. Content is generated in Markdown format
 
-### Retry Strategy:
-- **Máximo**: 3 tentativas
-- **Delay**: Progressivo (60s, 120s, 180s)
-- **Timeout**: 10 minutos por tarefa
+### 4. Improve Posts
 
-## 📊 Monitoramento com Flower
+1. On the post page, click "Improve Post"
+2. AI will expand content with:
+   - Practical code examples
+   - Detailed explanations
+   - Security considerations
+   - Best practices
 
-Acesse http://localhost:5555 para:
-- Visualizar tarefas em execução
-- Acompanhar filas e workers
-- Ver histórico de execuções
-- Monitorar performance
+## 🔄 Asynchronous Architecture
 
-## 🔧 Configurações Avançadas
+### Processing Flow
 
-### Modelos OpenAI Utilizados:
-- **Tópicos**: GPT-4o-mini (econômico e rápido)
-- **Posts Simples**: GPT-4o-mini
-- **Artigos**: GPT-4o (maior qualidade)
-- **Melhorias**: GPT-4o (melhor análise)
+1. **Web Interface** → Triggers Celery task
+2. **Redis** → Stores task in queue
+3. **Celery Worker** → Processes AI API call
+4. **Result** → Updates database
+5. **Interface** → Shows result or status
 
-### Configurações de Performance:
+### Configured Queues
+
+- `default`: General tasks
+- `ai_tasks`: Specific AI calls (isolated)
+
+### Retry Strategy
+
+- **Maximum**: 3 attempts
+- **Delay**: Progressive (60s, 120s, 180s)
+- **Timeout**: 10 minutes per task
+
+## 📊 Monitoring with Flower
+
+Access <http://localhost:5555> to:
+
+- View running tasks
+- Monitor queues and workers
+- See execution history
+- Monitor performance
+
+## 🔧 Advanced Configuration
+
+### AI Models Used by Provider
+
+#### OpenAI
+
+- **Topics**: GPT-4o-mini (economical and fast)
+- **Simple Posts**: GPT-4o-mini
+- **Articles**: GPT-4o (higher quality)
+- **Improvements**: GPT-4o (better analysis)
+
+#### Grok
+
+- **All operations**: grok-beta
+
+#### Gemini
+
+- **All operations**: gemini-1.5-pro
+
+### Performance Settings
+
 ```python
 # settings.py
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_TASK_SOFT_TIME_LIMIT = 300  # 5 minutos
-CELERY_TASK_TIME_LIMIT = 600       # 10 minutos
+CELERY_TASK_SOFT_TIME_LIMIT = 300  # 5 minutes
+CELERY_TASK_TIME_LIMIT = 600       # 10 minutes
 ```
 
 ## 🐛 Troubleshooting
 
-### Redis não conecta:
-```bash
-# Verificar se Redis está rodando
-redis-cli ping  # Deve retornar "PONG"
+### Redis Connection Issues
 
-# Verificar porta
+```bash
+# Check if Redis is running
+redis-cli ping  # Should return "PONG"
+
+# Check port
 sudo netstat -tlnp | grep :6379
 ```
 
-### Celery Worker não inicia:
+### Celery Worker Won't Start
+
 ```bash
-# Verificar logs
+# Check logs
 celery -A post_pilot worker --loglevel=debug
 
-# Verificar configurações
+# Verify settings
 python manage.py shell
 >>> from django.conf import settings
 >>> print(settings.CELERY_BROKER_URL)
 ```
 
-### OpenAI API Timeout:
+### AI API Timeout
+
 ```bash
-# Verificar API Key
+# Verify API Key
 python manage.py shell
 >>> import os
 >>> print(os.getenv('OPENAI_API_KEY'))
 ```
 
-## 📝 Estrutura de Dados
+### Provider Switching Issues
 
-### Theme Model:
-- `title`: Título do tema
-- `suggested_topics`: Tópicos gerados pela IA (JSON)
-- `processing_status`: Status do processamento assíncrono
+```bash
+# Restart Celery workers after changing provider
+celery -A post_pilot worker --reload
+```
 
-### Post Model:
-- `post_type`: 'simple' ou 'article'
-- `content`: Conteúdo em Markdown
-- `promotional_post`: Post promocional (apenas artigos)
-- `processing_status`: Status do processamento assíncrono
+## 📝 Data Structure
 
-## 🚀 Produção
+### Theme Model
 
-### Configurações Recomendadas:
+- `title`: Theme title
+- `suggested_topics`: AI-generated topics (JSON)
+- `processing_status`: Async processing status
+- `is_active`: Active status
+
+### Post Model
+
+- `post_type`: 'simple' or 'article'
+- `content`: Content in Markdown
+- `promotional_post`: Promotional post (articles only)
+- `processing_status`: Async processing status
+- `ai_model_used`: AI model used for generation
+
+## 🚀 Production Deployment
+
+### Recommended Settings
+
 ```bash
 # PostgreSQL
 pip install psycopg2-binary
@@ -339,11 +394,21 @@ pip install psycopg2-binary
 # Gunicorn
 pip install gunicorn
 
-# Supervisor para gerenciar processos
+# Supervisor for process management
 sudo apt install supervisor
 ```
 
-### Docker Compose (Opcional):
+### Environment Variables for Production
+
+```env
+DEBUG=False
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+DATABASE_URL=postgresql://user:password@localhost:5432/postpilot
+CELERY_BROKER_URL=redis://localhost:6379/0
+```
+
+### Docker Compose Example
+
 ```yaml
 version: '3.8'
 services:
@@ -352,175 +417,108 @@ services:
     ports:
       - "6379:6379"
   
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: postpilot
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+  
+  web:
+    build: .
+    command: gunicorn post_pilot.wsgi:application --bind 0.0.0.0:8000
+    depends_on:
+      - db
+      - redis
+  
   worker:
     build: .
-    command: celery -A post_pilot worker
+    command: celery -A post_pilot worker --loglevel=info
     depends_on:
+      - db
       - redis
 ```
 
-## 📄 Licença
+## 🔒 Security Considerations
 
-Este projeto está sob licença MIT. Veja o arquivo LICENSE para mais detalhes.
+- Keep API keys secure in environment variables
+- Use HTTPS in production
+- Implement rate limiting for AI API calls
+- Monitor API usage and costs
+- Regular security updates for dependencies
 
-## 🤝 Contribuições
+## 💰 Cost Optimization
 
-Contribuições são bem-vindas! Por favor:
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
+### OpenAI
 
-## 🆘 Suporte
+- Use GPT-4o-mini for cost-effective operations
+- Implement caching for repeated requests
+- Monitor token usage
 
-Para dúvidas e suporte:
-- Abra uma issue no GitHub
-- Consulte a documentação do Django
-- Verifique a documentação do Celery
+### Grok
+
+- Pricing to be announced (currently in beta)
+
+### Gemini
+
+- Utilize free tier limits effectively
+- Monitor rate limits
+
+## 📄 License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the project
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
+## 🆘 Support
+
+For questions and support:
+
+- Open an issue on GitHub
+- Check Django documentation
+- Review Celery documentation
+- Consult AI provider documentation
+
+## 🏗 Architecture Overview
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Web Interface │────│   Django Views  │────│     Models      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │  Celery Tasks   │
+                       └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │ AI Service      │
+                       │ Factory         │
+                       └─────────────────┘
+                                │
+                    ┌───────────┼───────────┐
+                    ▼           ▼           ▼
+            ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+            │   OpenAI    │ │    Grok     │ │   Gemini    │
+            │   Service   │ │   Service   │ │   Service   │
+            └─────────────┘ └─────────────┘ └─────────────┘
+```
+
+## 📈 Version History
+
+- **v2.0.0**: Multi-AI provider support, full English translation
+- **v1.5.0**: Celery integration, asynchronous processing
+- **v1.0.0**: Initial release with OpenAI support
 
 ---
 
-**Desenvolvido com ❤️ para otimizar a criação de conteúdo técnico no LinkedIn**
-
-Sistema Django para geração automática de postagens para LinkedIn usando OpenAI.
-
-## Funcionalidades
-
-- **Gestão de Temas**: Crie temas para suas postagens
-- **Geração de Tópicos**: Use IA para gerar 3-5 tópicos relevantes baseados no tema
-- **Geração de Conteúdo**: Crie posts simples ou artigos baseados nos tópicos
-- **Tipos de Conteúdo**: 
-  - Posts simples (até 1300 caracteres)
-  - Artigos (800-1200 palavras)
-- **SEO**: Título e descrição otimizados para cada post
-- **Status de Publicação**: Rascunho, Gerado, Publicado, Agendado
-
-## Instalação
-
-1. Clone o repositório
-2. Instale as dependências:
-```bash
-pip install django openai python-dotenv
-```
-
-3. Configure a chave da OpenAI no arquivo `.env`:
-```
-OPENAI_API_KEY=sua_chave_aqui
-```
-
-4. Execute as migrações:
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-5. Crie um superusuário:
-```bash
-python manage.py createsuperuser
-```
-
-6. Execute o servidor:
-```bash
-python manage.py runserver
-```
-
-## Uso
-
-### 1. Criar um Tema
-- Acesse `/themes/create/`
-- Defina título e descrição detalhada do tema
-- O tema servirá como base para geração de tópicos
-
-### 2. Gerar Tópicos
-- Na página do tema, clique em "Gerar Tópicos"
-- A IA irá sugerir 3-5 tópicos relevantes
-- Os tópicos ficam salvos no tema
-
-### 3. Gerar Posts
-- Selecione um tópico gerado
-- Escolha o tipo (Post Simples ou Artigo)
-- A IA irá criar o conteúdo completo
-- Cada tema pode ter 1 artigo + 1 post simples
-
-### 4. Gerenciar Posts
-- Edite o conteúdo gerado se necessário
-- Defina status (rascunho, publicado, agendado)
-- Adicione links relacionados
-
-## Estrutura do Projeto
-
-```
-post_pilot/
-├── core/                   # App principal
-│   ├── models.py          # Theme e Post models
-│   ├── admin.py           # Interface admin
-│   ├── views.py           # Views principais
-│   ├── services.py        # Integração OpenAI
-│   └── urls.py            # URLs do app
-├── templates/core/        # Templates HTML
-├── post_pilot/           # Configurações Django
-└── db.sqlite3           # Banco SQLite
-```
-
-## Modelos
-
-### Theme
-- Título e descrição
-- Tópicos sugeridos (JSON)
-- Data de geração dos tópicos
-- Status ativo/inativo
-
-### Post
-- Relacionado a um tema
-- Tipo: simples ou artigo
-- Título, conteúdo, tópico
-- SEO: título e descrição
-- Link opcional
-- Status e datas de controle
-- Metadados de geração (prompt, modelo usado)
-
-## Admin Interface
-
-Acesse `/admin/` para:
-- Gerenciar temas e posts
-- Ver estatísticas
-- Ações em lote (marcar como publicado/rascunho)
-- Filtros por tipo, status, data
-
-## Agentes OpenAI
-
-### Agente 1 - Geração de Tópicos
-- Modelo: GPT-3.5-turbo
-- Recebe tema e descrição
-- Retorna 3-5 tópicos específicos em JSON
-
-### Agente 2 - Geração de Conteúdo
-- Modelo: GPT-3.5-turbo (posts) / GPT-4 (artigos)
-- Recebe tópico e tipo de conteúdo
-- Segue templates pré-definidos
-- Retorna título, conteúdo e SEO em JSON
-
-## URLs Principais
-
-- `/` - Dashboard
-- `/themes/` - Lista de temas
-- `/themes/create/` - Criar tema
-- `/themes/{id}/` - Detalhe do tema
-- `/posts/` - Lista de posts
-- `/posts/{id}/` - Detalhe do post
-- `/admin/` - Interface administrativa
-
-## Configurações
-
-Variáveis de ambiente no `.env`:
-- `OPENAI_API_KEY` - Chave da API OpenAI (obrigatória)
-- `SECRET_KEY` - Chave secreta Django (opcional para dev)
-
-## Próximos Passos
-
-- Implementar agendamento de publicação
-- Integração com LinkedIn API
-- Analytics de performance
-- Templates personalizáveis
-- Aprovação em workflow
+**Developed with ❤️ for optimizing technical content creation on LinkedIn**

@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Editar {{ post.title }} - Post Pilot{% endblock %}
+{% block title %}Edit {{ post.title }} - Post Pilot{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -10,7 +10,7 @@
                 <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
                 <li class="breadcrumb-item"><a href="{% url 'post_list' %}">Posts</a></li>
                 <li class="breadcrumb-item"><a href="{% url 'post_detail' post.id %}">{{ post.title|truncatewords:3 }}</a></li>
-                <li class="breadcrumb-item active">Editar</li>
+                <li class="breadcrumb-item active">Edit</li>
             </ol>
         </nav>
     </div>
@@ -20,7 +20,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h4 class="mb-0">Editar Post</h4>
+                <h4 class="mb-0">Edit Post</h4>
             </div>
             <div class="card-body">
                 <form method="post">
@@ -44,16 +44,16 @@
                         </div>
                     </div>
                     
-                    <!-- Título -->
+                    <!-- Title -->
                     <div class="mb-3">
-                        <label for="title" class="form-label"><strong>Título *</strong></label>
+                        <label for="title" class="form-label"><strong>Title *</strong></label>
                         <input type="text" class="form-control" id="title" name="title" value="{{ post.title }}" required>
-                        <div class="form-text">Título principal do post</div>
+                        <div class="form-text">Title principal do post</div>
                     </div>
                     
-                    <!-- Conteúdo -->
+                    <!-- Content -->
                     <div class="mb-3">
-                        <label for="content" class="form-label"><strong>Conteúdo *</strong></label>
+                        <label for="content" class="form-label"><strong>Content *</strong></label>
                         <textarea class="form-control" id="content" name="content" rows="{% if post.post_type == 'article' %}15{% else %}8{% endif %}" required>{{ post.content }}</textarea>
                         <div class="form-text">
                             {% if post.post_type == 'simple' %}
@@ -70,14 +70,14 @@
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="seo_title" class="form-label">Título SEO</label>
+                                <label for="seo_title" class="form-label">Title SEO</label>
                                 <input type="text" class="form-control" id="seo_title" name="seo_title" value="{{ post.seo_title }}" maxlength="60">
                                 <div class="form-text">Máximo 60 caracteres <span id="seoTitleCount"></span></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="seo_description" class="form-label">Descrição SEO</label>
+                                <label for="seo_description" class="form-label">Description SEO</label>
                                 <textarea class="form-control" id="seo_description" name="seo_description" rows="3" maxlength="160">{{ post.seo_description }}</textarea>
                                 <div class="form-text">Máximo 160 caracteres <span id="seoDescCount"></span></div>
                             </div>
@@ -98,10 +98,10 @@
                             <div class="mb-3">
                                 <label for="status" class="form-label">Status</label>
                                 <select class="form-select" id="status" name="status">
-                                    <option value="draft" {% if post.status == 'draft' %}selected{% endif %}>Rascunho</option>
-                                    <option value="generated" {% if post.status == 'generated' %}selected{% endif %}>Gerado</option>
-                                    <option value="scheduled" {% if post.status == 'scheduled' %}selected{% endif %}>Agendado</option>
-                                    <option value="published" {% if post.status == 'published' %}selected{% endif %}>Publicado</option>
+                                    <option value="draft" {% if post.status == 'draft' %}selected{% endif %}>Draft</option>
+                                    <option value="generated" {% if post.status == 'generated' %}selected{% endif %}>Generated</option>
+                                    <option value="scheduled" {% if post.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                                    <option value="published" {% if post.status == 'published' %}selected{% endif %}>Published</option>
                                 </select>
                             </div>
                         </div>
@@ -117,14 +117,14 @@
                     <!-- Botões de ação -->
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save me-2"></i>Salvar Alterações
+                            <i class="bi bi-save me-2"></i>Save Alterações
                         </button>
                         <a href="{% url 'post_detail' post.id %}" class="btn btn-secondary">
-                            <i class="bi bi-x-lg me-2"></i>Cancelar
+                            <i class="bi bi-x-lg me-2"></i>Cancel
                         </a>
                         {% if post.status != 'published' %}
-                            <button type="submit" name="publish" value="true" class="btn btn-success" onclick="return confirm('Salvar e publicar este post?')">
-                                <i class="bi bi-send me-2"></i>Salvar e Publicar
+                            <button type="submit" name="publish" value="true" class="btn btn-success" onclick="return confirm('Save e publicar este post?')">
+                                <i class="bi bi-send me-2"></i>Save e Publish
                             </button>
                         {% endif %}
                     </div>
@@ -156,10 +156,10 @@
                 <hr>
                 
                 <small class="text-muted">
-                    <strong>Criado:</strong> {{ post.created_at|date:"d/m/Y H:i" }}<br>
-                    <strong>Modificado:</strong> {{ post.updated_at|date:"d/m/Y H:i" }}<br>
+                    <strong>Created:</strong> {{ post.created_at|date:"m/d/Y H:i" }}<br>
+                    <strong>Modificado:</strong> {{ post.updated_at|date:"m/d/Y H:i" }}<br>
                     {% if post.generated_at %}
-                        <strong>Gerado por IA:</strong> {{ post.generated_at|date:"d/m/Y H:i" }}<br>
+                        <strong>Generated por IA:</strong> {{ post.generated_at|date:"m/d/Y H:i" }}<br>
                     {% endif %}
                 </small>
             </div>
@@ -188,7 +188,7 @@
                     <div class="col-6">
                         <strong id="liveSeoTitleCount">{{ post.seo_title|length }}</strong>
                         <br>
-                        <small class="text-muted">SEO Título</small>
+                        <small class="text-muted">SEO Title</small>
                     </div>
                 </div>
             </div>
@@ -210,7 +210,7 @@
                 {% else %}
                     <ul class="small">
                         <li>Artigos devem ter entre 800-1200 palavras</li>
-                        <li>Use subtítulos para organizar o conteúdo</li>
+                        <li>Use subtitles to organize content</li>
                         <li>Inclua insights práticos e aplicáveis</li>
                         <li>Termine com uma conclusão clara</li>
                     </ul>

@@ -1,21 +1,21 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Criar Tema - Post Pilot{% endblock %}
+{% block title %}Create Tema - Post Pilot{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-8">
-        <h1>Criar Novo Tema</h1>
+        <h1>Create New Theme</h1>
         
         <form method="post">
             {% csrf_token %}
             <div class="mb-3">
-                <label for="title" class="form-label">Título do Tema</label>
+                <label for="title" class="form-label">Title do Tema</label>
                 <input type="text" class="form-control" id="title" name="title" required>
             </div>
                         
-            <button type="submit" class="btn btn-primary">Criar Tema</button>
-            <a href="{% url 'theme_list' %}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Create Tema</button>
+            <a href="{% url 'theme_list' %}" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
     
@@ -26,7 +26,7 @@
             </div>
             <div class="card-body">
                 <ul>
-                    <li>Use títulos claros e específicos</li>
+                    <li>Use clear and specific titles</li>
                     <li>Após criar o tema, você poderá gerar tópicos com IA</li>
                     <li>Cada tema pode ter um artigo e um post simples</li>
                 </ul>

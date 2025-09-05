@@ -23,7 +23,7 @@ class AIServiceBase(ABC):
         self, theme_title: str, existing_topics: Optional[List] = None
     ) -> Dict:
         """Generate topics using the AI provider"""
-        # Construir contexto sobre tópicos existentes
+        # Build context about existing topics
         existing_context = ""
         if existing_topics:
             existing_titles = []

@@ -11,8 +11,8 @@
             <span class="visually-hidden">Carregando...</span>
         </div>
         <div>
-            <strong>Processando...</strong> 
-            <span id="processing-message">A IA está gerando conteúdo para este tema. A página será atualizada automaticamente quando concluído.</span>
+            <strong>Processing...</strong> 
+            <span id="processing-message">AI is generating content for this theme. The page will be automatically updated when completed.</span>
         </div>
     </div>
 </div>
@@ -23,7 +23,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'theme_list' %}">Temas</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'theme_list' %}">Themes</a></li>
                 <li class="breadcrumb-item active">{{ theme.title }}</li>
             </ol>
         </nav>
@@ -36,7 +36,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="mb-0">{{ theme.title }}</h2>
                 <span class="badge bg-{% if theme.is_active %}success{% else %}secondary{% endif %}">
-                    {% if theme.is_active %}Ativo{% else %}Inativo{% endif %}
+                    {% if theme.is_active %}Active{% else %}Inactive{% endif %}
                 </span>
             </div>
             <div class="card-body">
@@ -44,19 +44,19 @@
                     <div class="col-md-4">
                         <div class="text-center">
                             <h5 class="text-primary">{{ theme.posts_count }}</h5>
-                            <small class="text-muted">Total de Posts</small>
+                            <small class="text-muted">Total Posts</small>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="text-center">
                             <h5 class="text-info">{{ theme.articles_count }}</h5>
-                            <small class="text-muted">Artigos</small>
+                            <small class="text-muted">Articles</small>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="text-center">
                             <h5 class="text-success">{{ theme.simple_posts_count }}</h5>
-                            <small class="text-muted">Posts Simples</small>
+                            <small class="text-muted">Simple Posts</small>
                         </div>
                     </div>
                 </div>
@@ -65,29 +65,29 @@
                 
                 <div class="d-flex gap-2">
                     <small class="text-muted">
-                        Criado em: {{ theme.created_at|date:"d/m/Y H:i" }}
+                        Created on: {{ theme.created_at|date:"m/d/Y H:i" }}
                     </small>
                     {% if theme.topics_generated_at %}
                         <small class="text-muted">
-                            | Tópicos gerados em: {{ theme.topics_generated_at|date:"d/m/Y H:i" }}
+                            | Topics generated on: {{ theme.topics_generated_at|date:"m/d/Y H:i" }}
                         </small>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Seção de Tópicos Sugeridos -->
+        <!-- AI Suggested Topics Section -->
         <div class="card mt-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Tópicos Sugeridos pela IA</h5>
+                <h5 class="mb-0">AI Suggested Topics</h5>
                 <form method="post" action="{% url 'generate_topics' theme.id %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-primary btn-sm">
                         {% if theme.suggested_topics.topics %}
-                            <i class="bi bi-plus-circle me-1"></i>Adicionar Mais Tópicos 
+                            <i class="bi bi-plus-circle me-1"></i>Add More Topics 
                             <span class="badge bg-white text-primary ms-1">{{ theme.suggested_topics.topics|length }}</span>
                         {% else %}
-                            <i class="bi bi-lightbulb me-1"></i>Gerar Tópicos
+                            <i class="bi bi-lightbulb me-1"></i>Generate Topics
                         {% endif %}
                     </button>
                 </form>
@@ -100,7 +100,7 @@
                                 <div class="card border-light">
                                     <div class="card-body">
                                         {% if topic.title %}
-                                            <!-- Formato novo estruturado -->
+                                            <!-- New structured format -->
                                             <div class="d-flex justify-content-between align-items-start mb-2">
                                                 <h6 class="card-title mb-0">{{ forloop.counter }}. {{ topic.title }}</h6>
                                                 <span class="badge bg-info">{{ topic.post_type|default:"tip" }}</span>
@@ -118,7 +118,7 @@
                                             
                                             {% if topic.cta %}
                                                 <p class="text-success small mb-3">
-                                                    <strong>CTA sugerido:</strong> {{ topic.cta }}
+                                                    <strong>Suggested CTA:</strong> {{ topic.cta }}
                                                 </p>
                                             {% endif %}
                                             
@@ -132,7 +132,7 @@
                                                     {% if topic.cta %}<input type="hidden" name="topic_cta" value="{{ topic.cta }}">{% endif %}
                                                     <input type="hidden" name="post_type" value="simple">
                                                     <button type="submit" class="btn btn-outline-primary btn-sm">
-                                                        Gerar Post Simples
+                                                        Generate Simple Post
                                                     </button>
                                                 </form>
                                                 <form method="post" action="{% url 'generate_post_from_topic' theme.id %}" class="d-inline">
@@ -144,12 +144,12 @@
                                                     {% if topic.cta %}<input type="hidden" name="topic_cta" value="{{ topic.cta }}">{% endif %}
                                                     <input type="hidden" name="post_type" value="article">
                                                     <button type="submit" class="btn btn-outline-info btn-sm">
-                                                        Gerar Artigo
+                                                        Generate Article
                                                     </button>
                                                 </form>
                                             </div>
                                         {% else %}
-                                            <!-- Formato antigo simples -->
+                                            <!-- Old simple format -->
                                             <h6 class="card-title">{{ forloop.counter }}. {{ topic }}</h6>
                                             <div class="btn-group" role="group">
                                                 <form method="post" action="{% url 'generate_post_from_topic' theme.id %}" class="d-inline">
@@ -157,7 +157,7 @@
                                                     <input type="hidden" name="topic" value="{{ topic }}">
                                                     <input type="hidden" name="post_type" value="simple">
                                                     <button type="submit" class="btn btn-outline-primary btn-sm">
-                                                        Gerar Post Simples
+                                                        Generate Simple Post
                                                     </button>
                                                 </form>
                                                 <form method="post" action="{% url 'generate_post_from_topic' theme.id %}" class="d-inline">
@@ -165,7 +165,7 @@
                                                     <input type="hidden" name="topic" value="{{ topic }}">
                                                     <input type="hidden" name="post_type" value="article">
                                                     <button type="submit" class="btn btn-outline-info btn-sm">
-                                                        Gerar Artigo
+                                                        Generate Article
                                                     </button>
                                                 </form>
                                             </div>
@@ -178,17 +178,17 @@
                 {% else %}
                     <div class="text-center py-4">
                         <i class="bi bi-lightbulb text-muted" style="font-size: 3rem;"></i>
-                        <h5 class="text-muted mt-3">Nenhum tópico gerado ainda</h5>
-                        <p class="text-muted">Clique em "Gerar Tópicos" para criar sugestões baseadas na descrição do tema.</p>
+                        <h5 class="text-muted mt-3">No topics generated yet</h5>
+                        <p class="text-muted">Click "Generate Topics" to create suggestions based on the theme description.</p>
                     </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Seção de Posts Criados -->
+        <!-- Seção de Created Posts -->
         <div class="card mt-4">
             <div class="card-header">
-                <h5 class="mb-0">Posts Criados</h5>
+                <h5 class="mb-0">Created Posts</h5>
             </div>
             <div class="card-body">
                 {% if posts %}
@@ -219,7 +219,7 @@
                                             <small class="text-muted">{{ post.created_at|date:"d/m/Y" }}</small>
                                             <div class="btn-group btn-group-sm">
                                                 <a href="{% url 'post_detail' post.id %}" class="btn btn-outline-primary">Ver</a>
-                                                <a href="{% url 'post_edit' post.id %}" class="btn btn-outline-secondary">Editar</a>
+                                                <a href="{% url 'post_edit' post.id %}" class="btn btn-outline-secondary">Edit</a>
                                             </div>
                                         </div>
                                     </div>
@@ -230,7 +230,7 @@
                 {% else %}
                     <div class="text-center py-4">
                         <i class="bi bi-file-text text-muted" style="font-size: 3rem;"></i>
-                        <h5 class="text-muted mt-3">Nenhum post criado ainda</h5>
+                        <h5 class="text-muted mt-3">No posts created yet</h5>
                         <p class="text-muted">Gere tópicos primeiro e depois crie posts baseados neles.</p>
                     </div>
                 {% endif %}
@@ -260,13 +260,13 @@
                     </a>
                     
                     <a href="{% url 'theme_create' %}" class="btn btn-outline-success">
-                        <i class="bi bi-plus-circle me-2"></i>Criar Novo Tema
+                        <i class="bi bi-plus-circle me-2"></i>Create New Theme
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Estatísticas do Tema -->
+        <!-- Theme Statistics -->
         <div class="card mt-3">
             <div class="card-header">
                 <h6 class="mb-0">Estatísticas</h6>
@@ -282,12 +282,12 @@
                         {% if theme.suggested_topics.topics %}
                             <small class="text-muted d-block mt-1">
                                 <i class="bi bi-clock me-1"></i>
-                                Última atualização: {{ theme.topics_generated_at|date:"d/m H:i" }}
+                                Last update: {{ theme.topics_generated_at|date:"d/m H:i" }}
                             </small>
                         {% endif %}
                     </div>
                     <div class="col-6">
-                        <strong>Posts Publicados</strong>
+                        <strong>Published Posts</strong>
                         <br>
                         <span class="badge bg-success">
                             {{ posts|length }}
@@ -312,10 +312,10 @@
             <div class="card-body">
                 <small class="text-muted">
                     <strong>ID:</strong> {{ theme.id }}<br>
-                    <strong>Criado:</strong> {{ theme.created_at|date:"d/m/Y H:i" }}<br>
-                    <strong>Modificado:</strong> {{ theme.updated_at|date:"d/m/Y H:i" }}<br>
+                    <strong>Created:</strong> {{ theme.created_at|date:"m/d/Y H:i" }}<br>
+                    <strong>Modificado:</strong> {{ theme.updated_at|date:"m/d/Y H:i" }}<br>
                     {% if theme.topics_generated_at %}
-                        <strong>Tópicos:</strong> {{ theme.topics_generated_at|date:"d/m/Y H:i" }}
+                        <strong>Tópicos:</strong> {{ theme.topics_generated_at|date:"m/d/Y H:i" }}
                     {% endif %}
                 </small>
             </div>
@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Verificar se não excedeu o limite
             if (pollCount > maxPolls) {
-                console.log('Polling interrompido: tempo limite excedido');
+                console.log('Polling interrupted: time limit exceeded');
                 clearInterval(poll);
                 showPollingTimeout();
                 return;
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const notProcessing = !data.is_processing;
                     
                     if ((statusCompleted && notProcessing) || topicsChanged) {
-                        console.log('Mudanças detectadas! Recarregando página...', {
+                        console.log('Changes detected! Reloading page...', {
                             topicsChanged,
                             statusCompleted,
                             notProcessing,
@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }, 1500);
                         
                     } else if (data.status === 'failed' || data.status === 'error') {
-                        console.log('Task falhou:', data.error);
+                        console.log('Task failed:', data.error);
                         clearInterval(poll);
                         showErrorMessage(data.error);
                         
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Se ainda está processando, continuar polling
                 })
                 .catch(error => {
-                    console.error('Erro no polling:', error);
+                    console.error('Polling error:', error);
                     // Continuar tentando em caso de erro de rede
                 });
         }, pollingInterval);
@@ -447,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="d-flex align-items-center">
                     <i class="bi bi-check-circle-fill me-3 text-success"></i>
                     <div>
-                        <strong>Concluído!</strong> 
+                        <strong>Completed!</strong> 
                         <span>O conteúdo foi gerado com sucesso. A página será atualizada em instantes.</span>
                     </div>
                 </div>

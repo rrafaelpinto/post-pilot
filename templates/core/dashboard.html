@@ -15,7 +15,7 @@
     <div class="col-md-3">
         <div class="card text-white bg-primary">
             <div class="card-body">
-                <h5 class="card-title">Temas</h5>
+                <h5 class="card-title">Themes</h5>
                 <h2>{{ total_themes }}</h2>
                 <p class="card-text">Total de temas ativos</p>
             </div>
@@ -24,27 +24,27 @@
     <div class="col-md-3">
         <div class="card text-white bg-success">
             <div class="card-body">
-                <h5 class="card-title">Posts Totais</h5>
+                <h5 class="card-title">Total Posts</h5>
                 <h2>{{ total_posts }}</h2>
-                <p class="card-text">Total de posts criados</p>
+                <p class="card-text">Total posts created</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card text-white bg-info">
             <div class="card-body">
-                <h5 class="card-title">Publicados</h5>
+                <h5 class="card-title">Publisheds</h5>
                 <h2>{{ published_posts }}</h2>
-                <p class="card-text">Posts publicados</p>
+                <p class="card-text">Published posts</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card text-white bg-warning">
             <div class="card-body">
-                <h5 class="card-title">Rascunhos</h5>
+                <h5 class="card-title">Drafts</h5>
                 <h2>{{ draft_posts }}</h2>
-                <p class="card-text">Posts em rascunho</p>
+                <p class="card-text">Draft posts</p>
             </div>
         </div>
     </div>
@@ -54,7 +54,7 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Temas Recentes</h5>
+                <h5>Recent Themes</h5>
                 <a href="{% url 'theme_create' %}" class="btn btn-sm btn-primary">Novo Tema</a>
             </div>
             <div class="card-body">
@@ -62,13 +62,13 @@
                     {% for theme in recent_themes %}
                         <div class="border-bottom pb-2 mb-2">
                             <h6><a href="{% url 'theme_detail' theme.id %}">{{ theme.title }}</a></h6>
-                            <small class="text-muted">{{ theme.created_at|date:"d/m/Y H:i" }}</small>
+                            <small class="text-muted">{{ theme.created_at|date:"m/d/Y H:i" }}</small>
                         </div>
                     {% endfor %}
                     <a href="{% url 'theme_list' %}" class="btn btn-sm btn-outline-primary">Ver todos</a>
                 {% else %}
-                    <p class="text-muted">Nenhum tema criado ainda.</p>
-                    <a href="{% url 'theme_create' %}" class="btn btn-primary">Criar primeiro tema</a>
+                    <p class="text-muted">No themes created yet.</p>
+                    <a href="{% url 'theme_create' %}" class="btn btn-primary">Create primeiro tema</a>
                 {% endif %}
             </div>
         </div>
@@ -77,7 +77,7 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h5>Posts Recentes</h5>
+                <h5>Recent Posts</h5>
             </div>
             <div class="card-body">
                 {% if recent_posts %}
@@ -85,13 +85,13 @@
                         <div class="border-bottom pb-2 mb-2">
                             <h6><a href="{% url 'post_detail' post.id %}">{{ post.title }}</a></h6>
                             <small class="text-muted">
-                                {{ post.get_post_type_display }} - {{ post.get_status_display }} - {{ post.created_at|date:"d/m/Y H:i" }}
+                                {{ post.get_post_type_display }} - {{ post.get_status_display }} - {{ post.created_at|date:"m/d/Y H:i" }}
                             </small>
                         </div>
                     {% endfor %}
                     <a href="{% url 'post_list' %}" class="btn btn-sm btn-outline-primary">Ver todos</a>
                 {% else %}
-                    <p class="text-muted">Nenhum post criado ainda.</p>
+                    <p class="text-muted">No posts created yet.</p>
                 {% endif %}
             </div>
         </div>
