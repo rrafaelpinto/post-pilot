@@ -1,0 +1,202 @@
+from django.db import models
+from django.utils import timezone
+
+
+class Theme(models.Model):
+    """Model for post themes"""
+
+    PROCESSING_STATUS_CHOICES = [
+        ("idle", "Waiting"),
+        ("processing", "Processing"),
+        ("completed", "Completed"),
+        ("failed", "Failed"),
+    ]
+
+    title = models.CharField(max_length=200, verbose_name="Theme Title")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Created at")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated at")
+    is_active = models.BooleanField(default=True, verbose_name="Active")
+
+    # Field for asynchronous processing control
+    processing_status = models.CharField(
+        max_length=20,
+        choices=PROCESSING_STATUS_CHOICES,
+        default="idle",
+        verbose_name="Processing Status",
+    )
+
+    # Additional field for quick processing verification
+    is_processing = models.BooleanField(default=False, verbose_name="Is Processing")
+
+    # Fields to store topics suggested by OpenAI
+    suggested_topics = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="Suggested Topics",
+        help_text="Topics suggested by the first OpenAI agent",
+    )
+    topics_generated_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Topics generated at"
+    )
+
+    class Meta:
+        verbose_name = "Theme"
+        verbose_name_plural = "Themes"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def posts_count(self):
+        """Returns the total number of posts related to this theme"""
+        return self.posts.count()
+
+    @property
+    def articles_count(self):
+        """Returns the number of articles related to this theme"""
+        return self.posts.filter(post_type="article").count()
+
+    @property
+    def simple_posts_count(self):
+        """Returns the number of simple posts related to this theme"""
+        return self.posts.filter(post_type="simple").count()
+
+
+class Post(models.Model):
+    """Model for LinkedIn posts"""
+
+    POST_TYPES = [
+        ("simple", "Simple Post"),
+        ("article", "Article"),
+    ]
+
+    STATUS_CHOICES = [
+        ("draft", "Draft"),
+        ("generated", "Generated"),
+        ("published", "Published"),
+        ("scheduled", "Scheduled"),
+    ]
+
+    PROCESSING_STATUS_CHOICES = [
+        ("idle", "Waiting"),
+        ("processing", "Processing"),
+        ("completed", "Completed"),
+        ("failed", "Failed"),
+    ]
+
+    # Basic information
+    theme = models.ForeignKey(
+        Theme, on_delete=models.CASCADE, related_name="posts", verbose_name="Theme"
+    )
+    post_type = models.CharField(
+        max_length=10, choices=POST_TYPES, verbose_name="Post Type"
+    )
+    title = models.CharField(max_length=200, verbose_name="Title")
+    content = models.TextField(verbose_name="Content")
+    promotional_post = models.TextField(
+        blank=True,
+        verbose_name="Promotional Post",
+        help_text="Summarized post to promote articles on LinkedIn",
+    )
+    cover_image_prompt = models.TextField(
+        blank=True,
+        verbose_name="Cover Image Prompt",
+        help_text="Detailed description for article cover image generation",
+    )
+    topic = models.CharField(
+        max_length=200,
+        verbose_name="Topic",
+        help_text="Specific topic used to generate this post",
+    )
+
+    # SEO
+    seo_title = models.CharField(
+        max_length=60,
+        verbose_name="SEO Title",
+        help_text="SEO optimized title (max. 60 characters)",
+    )
+    seo_description = models.CharField(
+        max_length=160,
+        verbose_name="SEO Description",
+        help_text="SEO optimized description (max. 160 characters)",
+    )
+
+    # Link and dates
+    link = models.URLField(
+        blank=True,
+        null=True,
+        verbose_name="Link",
+        help_text="Post related link (optional)",
+    )
+    post_date = models.DateTimeField(default=timezone.now, verbose_name="Post Date")
+    scheduled_date = models.DateTimeField(
+        blank=True, null=True, verbose_name="Scheduled Date"
+    )
+
+    # Control
+    status = models.CharField(
+        max_length=10, choices=STATUS_CHOICES, default="draft", verbose_name="Status"
+    )
+    processing_status = models.CharField(
+        max_length=20,
+        choices=PROCESSING_STATUS_CHOICES,
+        default="idle",
+        verbose_name="Processing Status",
+    )
+
+    # Additional field for quick processing verification
+    is_processing = models.BooleanField(default=False, verbose_name="Is Processing")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Created at")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated at")
+    generated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Generated at",
+        help_text="Date and time when content was generated by AI",
+    )
+
+    # Generation metadata
+    generation_prompt = models.TextField(
+        blank=True,
+        verbose_name="Generation Prompt",
+        help_text="Prompt used to generate content",
+    )
+    ai_model_used = models.CharField(
+        max_length=50, blank=True, verbose_name="AI Model Used"
+    )
+
+    class Meta:
+        verbose_name = "Post"
+        verbose_name_plural = "Posts"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_post_type_display()})"
+
+    def save(self, *args, **kwargs):
+        # If being generated for the first time, set generation date
+        if self.status == "generated" and not self.generated_at:
+            self.generated_at = timezone.now()
+        super().save(*args, **kwargs)
+
+    @property
+    def is_published(self):
+        """Checks if the post has been published"""
+        return self.status == "published"
+
+    @property
+    def is_scheduled(self):
+        """Checks if the post is scheduled"""
+        return (
+            self.status == "scheduled"
+            and self.scheduled_date
+            and self.scheduled_date > timezone.now()
+        )
+
+    @property
+    def content_preview(self):
+        """Returns a content preview (first 100 characters)"""
+        if len(self.content) > 100:
+            return self.content[:100] + "..."
+        return self.content

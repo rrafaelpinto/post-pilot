@@ -1,0 +1,271 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Edit {{ post.title }} - Post Pilot{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'post_list' %}">Posts</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'post_detail' post.id %}">{{ post.title|truncatewords:3 }}</a></li>
+                <li class="breadcrumb-item active">Edit</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Edit Post</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Informações básicas -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Tema:</strong></label>
+                                <input type="text" class="form-control" value="{{ post.theme.title }}" readonly>
+                                <small class="text-muted">O tema não pode ser alterado</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Tipo:</strong></label>
+                                <input type="text" class="form-control" value="{{ post.get_post_type_display }}" readonly>
+                                <small class="text-muted">O tipo não pode ser alterado</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label"><strong>Title *</strong></label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{ post.title }}" required>
+                        <div class="form-text">Title principal do post</div>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="mb-3">
+                        <label for="content" class="form-label"><strong>Content *</strong></label>
+                        <textarea class="form-control" id="content" name="content" rows="{% if post.post_type == 'article' %}15{% else %}8{% endif %}" required>{{ post.content }}</textarea>
+                        <div class="form-text">
+                            {% if post.post_type == 'simple' %}
+                                Recomendado: máximo 1300 caracteres para posts simples
+                            {% else %}
+                                Recomendado: entre 800-1200 palavras para artigos
+                            {% endif %}
+                            <span id="charCount"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- SEO -->
+                    <h5>SEO</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="seo_title" class="form-label">Title SEO</label>
+                                <input type="text" class="form-control" id="seo_title" name="seo_title" value="{{ post.seo_title }}" maxlength="60">
+                                <div class="form-text">Máximo 60 caracteres <span id="seoTitleCount"></span></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="seo_description" class="form-label">Description SEO</label>
+                                <textarea class="form-control" id="seo_description" name="seo_description" rows="3" maxlength="160">{{ post.seo_description }}</textarea>
+                                <div class="form-text">Máximo 160 caracteres <span id="seoDescCount"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Link relacionado -->
+                    <div class="mb-3">
+                        <label for="link" class="form-label">Link Relacionado</label>
+                        <input type="url" class="form-control" id="link" name="link" value="{{ post.link }}" placeholder="https://exemplo.com">
+                        <div class="form-text">Link opcional relacionado ao post</div>
+                    </div>
+                    
+                    <!-- Status e agendamento -->
+                    <h5>Publicação</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="draft" {% if post.status == 'draft' %}selected{% endif %}>Draft</option>
+                                    <option value="generated" {% if post.status == 'generated' %}selected{% endif %}>Generated</option>
+                                    <option value="scheduled" {% if post.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                                    <option value="published" {% if post.status == 'published' %}selected{% endif %}>Published</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3" id="scheduledDateDiv" {% if post.status != 'scheduled' %}style="display: none;"{% endif %}>
+                                <label for="scheduled_date" class="form-label">Data Agendada</label>
+                                <input type="datetime-local" class="form-control" id="scheduled_date" name="scheduled_date" 
+                                       value="{% if post.scheduled_date %}{{ post.scheduled_date|date:'Y-m-d\TH:i' }}{% endif %}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botões de ação -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Save Alterações
+                        </button>
+                        <a href="{% url 'post_detail' post.id %}" class="btn btn-secondary">
+                            <i class="bi bi-x-lg me-2"></i>Cancel
+                        </a>
+                        {% if post.status != 'published' %}
+                            <button type="submit" name="publish" value="true" class="btn btn-success" onclick="return confirm('Save e publicar este post?')">
+                                <i class="bi bi-send me-2"></i>Save e Publish
+                            </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar com informações e preview -->
+    <div class="col-md-4">
+        <!-- Informações do post -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Informações</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>Tópico:</strong><br>
+                    {{ post.topic }}
+                </div>
+                
+                <div class="mb-2">
+                    <strong>Tipo:</strong>
+                    <span class="badge bg-{% if post.post_type == 'article' %}info{% else %}primary{% endif %}">
+                        {{ post.get_post_type_display }}
+                    </span>
+                </div>
+                
+                <hr>
+                
+                <small class="text-muted">
+                    <strong>Created:</strong> {{ post.created_at|date:"m/d/Y H:i" }}<br>
+                    <strong>Modificado:</strong> {{ post.updated_at|date:"m/d/Y H:i" }}<br>
+                    {% if post.generated_at %}
+                        <strong>Generated por IA:</strong> {{ post.generated_at|date:"m/d/Y H:i" }}<br>
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        
+        <!-- Estatísticas em tempo real -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Estatísticas</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-12 mb-2">
+                        <strong id="liveCharCount">{{ post.content|length }}</strong>
+                        <br>
+                        <small class="text-muted">
+                            Caracteres
+                            {% if post.post_type == 'simple' %}(máx. 1300){% endif %}
+                        </small>
+                    </div>
+                    <div class="col-6">
+                        <strong id="liveWordCount">{{ post.content|wordcount }}</strong>
+                        <br>
+                        <small class="text-muted">Palavras</small>
+                    </div>
+                    <div class="col-6">
+                        <strong id="liveSeoTitleCount">{{ post.seo_title|length }}</strong>
+                        <br>
+                        <small class="text-muted">SEO Title</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dicas -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Dicas</h6>
+            </div>
+            <div class="card-body">
+                {% if post.post_type == 'simple' %}
+                    <ul class="small">
+                        <li>Posts simples funcionam melhor com até 1300 caracteres</li>
+                        <li>Use hashtags relevantes no final</li>
+                        <li>Inclua call-to-action para engajamento</li>
+                        <li>Use quebras de linha para facilitar leitura</li>
+                    </ul>
+                {% else %}
+                    <ul class="small">
+                        <li>Artigos devem ter entre 800-1200 palavras</li>
+                        <li>Use subtitles to organize content</li>
+                        <li>Inclua insights práticos e aplicáveis</li>
+                        <li>Termine com uma conclusão clara</li>
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Contadores em tempo real
+function updateCounters() {
+    const content = document.getElementById('content').value;
+    const seoTitle = document.getElementById('seo_title').value;
+    const seoDescription = document.getElementById('seo_description').value;
+    
+    // Contadores principais
+    document.getElementById('liveCharCount').textContent = content.length;
+    document.getElementById('liveWordCount').textContent = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+    document.getElementById('liveSeoTitleCount').textContent = seoTitle.length;
+    
+    // Contadores dos campos
+    document.getElementById('charCount').textContent = `(${content.length} caracteres)`;
+    document.getElementById('seoTitleCount').textContent = `(${seoTitle.length}/60)`;
+    document.getElementById('seoDescCount').textContent = `(${seoDescription.length}/160)`;
+    
+    // Cores baseadas nos limites
+    const charCountElement = document.getElementById('liveCharCount');
+    {% if post.post_type == 'simple' %}
+        if (content.length > 1300) {
+            charCountElement.className = 'text-danger';
+        } else if (content.length > 1000) {
+            charCountElement.className = 'text-warning';
+        } else {
+            charCountElement.className = 'text-success';
+        }
+    {% endif %}
+}
+
+// Show/hide scheduled date field
+document.getElementById('status').addEventListener('change', function() {
+    const scheduledDiv = document.getElementById('scheduledDateDiv');
+    if (this.value === 'scheduled') {
+        scheduledDiv.style.display = 'block';
+    } else {
+        scheduledDiv.style.display = 'none';
+    }
+});
+
+// Event listeners
+document.getElementById('content').addEventListener('input', updateCounters);
+document.getElementById('seo_title').addEventListener('input', updateCounters);
+document.getElementById('seo_description').addEventListener('input', updateCounters);
+
+// Initialize counters
+updateCounters();
+</script>
+{% endblock %}
