@@ -167,7 +167,21 @@ const PostsPage: React.FC = () => {
                     newSet.delete(postId);
                     return newSet;
                 });
-                showToastMessage(`Erro na ${type === 'improve' ? 'melhoria' : 'geração de prompt'}`, 'danger');
+
+                // Extrair mensagem de erro específica se disponível
+                let errorMessage = `Erro na ${type === 'improve' ? 'melhoria' : 'geração de prompt'}`;
+
+                if (status.result && typeof status.result === 'object') {
+                    if (status.result.message) {
+                        errorMessage = status.result.message;
+                    } else if (status.result.status === 'error' && status.result.message) {
+                        errorMessage = status.result.message;
+                    }
+                } else if (typeof status.result === 'string') {
+                    errorMessage = status.result;
+                }
+
+                showToastMessage(errorMessage, 'danger');
             } else if (status.state === 'PENDING' || status.state === 'STARTED') {
                 setTimeout(() => checkTaskStatus(taskId, postId, type), 3000);
             }

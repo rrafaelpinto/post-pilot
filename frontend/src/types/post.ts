@@ -2,6 +2,8 @@ export interface Post {
     id: number;
     title: string;
     content: string;
+    topic?: string;
+    post_type: 'simple' | 'article';
     seo_title?: string;
     seo_description?: string;
     promotional_post?: string;

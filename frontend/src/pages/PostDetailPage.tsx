@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Container,
     Row,
     Col,
     Card,
@@ -13,12 +12,15 @@ import {
     Spinner,
     Breadcrumb,
     Toast,
-    ToastContainer
+    ToastContainer,
+    Dropdown,
+    ButtonGroup
 } from 'react-bootstrap';
 import ReactMarkdown from 'react-markdown';
 import { Post } from '../types/post';
 import { Theme } from '../types/theme';
 import Layout from '../components/Layout';
+import { postsApi, tasksApi } from '../services/api';
 
 const PostDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -37,10 +39,45 @@ const PostDetailPage: React.FC = () => {
     const [toastMessage, setToastMessage] = useState<string>('');
     const [toastVariant, setToastVariant] = useState<'success' | 'danger'>('success');
 
+    // Funções para calcular métricas do conteúdo
+    const calculateMetrics = (content: string) => {
+        if (!content) return { wordCount: 0, charCount: 0, charCountNoSpaces: 0, readingTime: 0 };
+
+        // Remove markdown syntax para contagem mais precisa
+        const plainText = content
+            .replace(/#{1,6}\s+/g, '') // Headers
+            .replace(/\*\*(.*?)\*\*/g, '$1') // Bold
+            .replace(/\*(.*?)\*/g, '$1') // Italic
+            .replace(/`(.*?)`/g, '$1') // Inline code
+            .replace(/```[\s\S]*?```/g, '') // Code blocks
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Links
+            .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1') // Images
+            .replace(/>\s*/g, '') // Blockquotes
+            .replace(/^\s*[-*+]\s+/gm, '') // List items
+            .replace(/^\s*\d+\.\s+/gm, '') // Numbered lists
+            .replace(/\n+/g, ' ') // Multiple newlines
+            .trim();
+
+        const wordCount = plainText.split(/\s+/).filter(word => word.length > 0).length;
+        const charCount = content.length;
+        const charCountNoSpaces = content.replace(/\s/g, '').length;
+
+        // Cálculo de tempo de leitura (assumindo 200 palavras por minuto)
+        const readingTime = Math.ceil(wordCount / 200);
+
+        return {
+            wordCount,
+            charCount,
+            charCountNoSpaces,
+            readingTime: readingTime || 1 // Mínimo 1 minuto
+        };
+    };
+
     useEffect(() => {
         if (id) {
             fetchPost();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const fetchPost = async () => {
@@ -52,48 +89,51 @@ const PostDetailPage: React.FC = () => {
                 throw new Error(`Erro: ${response.status}`);
             }
 
-            const postData = await response.json();
-            setPost(postData);
-            setEditData(postData);
+            const data = await response.json();
+            setPost(data);
 
-            // Buscar detalhes do tema
-            if (postData.theme) {
-                const themeResponse = await fetch(`http://localhost:8000/api/themes/${postData.theme}/`);
+            // Buscar tema se existir
+            if (data.theme) {
+                const themeResponse = await fetch(`http://localhost:8000/api/themes/${data.theme}/`);
                 if (themeResponse.ok) {
                     const themeData = await themeResponse.json();
                     setTheme(themeData);
                 }
             }
         } catch (err) {
-            console.error('Erro ao buscar post:', err);
             setError('Erro ao carregar post');
+            console.error('Error fetching post:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    const showToastMessage = (message: string, variant: 'success' | 'danger' = 'success') => {
-        setToastMessage(message);
-        setToastVariant(variant);
-        setShowToast(true);
+    const getStatusBadge = (status: string) => {
+        const statusMap: { [key: string]: { variant: string; text: string } } = {
+            draft: { variant: 'secondary', text: 'Rascunho' },
+            published: { variant: 'success', text: 'Publicado' },
+            archived: { variant: 'warning', text: 'Arquivado' },
+        };
+
+        const statusInfo = statusMap[status] || { variant: 'secondary', text: status };
+        return <Badge bg={statusInfo.variant}>{statusInfo.text}</Badge>;
     };
 
-    const copyToClipboard = async (text: string, fieldName: string) => {
+    const copyToClipboard = async (text: string, name: string) => {
         try {
             await navigator.clipboard.writeText(text);
-            showToastMessage(`${fieldName} copiado para a área de transferência!`);
+            showToastMessage(`${name} copiado para área de transferência!`, 'success');
         } catch (err) {
-            showToastMessage(`Erro ao copiar ${fieldName}`, 'danger');
+            console.error('Erro ao copiar:', err);
+            showToastMessage('Erro ao copiar texto', 'danger');
         }
     };
 
     const handleUpdatePost = async () => {
-        if (!post) return;
-
         try {
             setUpdating(true);
-            const response = await fetch(`http://localhost:8000/api/posts/${post.id}/`, {
-                method: 'PUT',
+            const response = await fetch(`http://localhost:8000/api/posts/${post!.id}/`, {
+                method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -107,7 +147,8 @@ const PostDetailPage: React.FC = () => {
             const updatedPost = await response.json();
             setPost(updatedPost);
             setShowEditModal(false);
-            showToastMessage('Post atualizado com sucesso!');
+            setEditData({});
+            showToastMessage('Post atualizado com sucesso!', 'success');
         } catch (err) {
             console.error('Erro ao atualizar post:', err);
             showToastMessage('Erro ao atualizar post', 'danger');
@@ -121,22 +162,47 @@ const PostDetailPage: React.FC = () => {
 
         try {
             setImproving(true);
-            const response = await fetch(`http://localhost:8000/api/posts/${post.id}/improve/`, {
-                method: 'POST',
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao melhorar post');
-            }
+            const response = await postsApi.improve(post.id);
 
             showToastMessage('Post sendo melhorado em segundo plano');
-            // Recarregar post após alguns segundos
-            setTimeout(fetchPost, 3000);
+            setTimeout(() => checkTaskStatus(response.task_id, 'improve'), 2000);
         } catch (err) {
             console.error('Erro ao melhorar post:', err);
             showToastMessage('Erro ao melhorar post', 'danger');
-        } finally {
             setImproving(false);
+        }
+    };
+
+    const checkTaskStatus = async (taskId: string, type: string) => {
+        try {
+            const status = await tasksApi.checkStatus(taskId);
+
+            if (status.state === 'SUCCESS') {
+                setImproving(false);
+                fetchPost();
+                showToastMessage(`${type === 'improve' ? 'Melhoria' : 'Prompt de imagem'} concluída!`, 'success');
+            } else if (status.state === 'FAILURE') {
+                setImproving(false);
+
+                let errorMessage = `Erro na ${type === 'improve' ? 'melhoria' : 'geração de prompt'}`;
+
+                if (status.result && typeof status.result === 'object') {
+                    if (status.result.message) {
+                        errorMessage = status.result.message;
+                    } else if (status.result.status === 'error' && status.result.message) {
+                        errorMessage = status.result.message;
+                    }
+                } else if (typeof status.result === 'string') {
+                    errorMessage = status.result;
+                }
+
+                showToastMessage(errorMessage, 'danger');
+            } else if (status.state === 'PENDING' || status.state === 'STARTED') {
+                setTimeout(() => checkTaskStatus(taskId, type), 3000);
+            }
+        } catch (error) {
+            setImproving(false);
+            showToastMessage('Erro ao verificar status da tarefa', 'danger');
         }
     };
 
@@ -145,7 +211,7 @@ const PostDetailPage: React.FC = () => {
 
         try {
             setGenerating(true);
-            const response = await fetch(`http://localhost:8000/api/posts/${post.id}/generate-image/`, {
+            const response = await fetch(`http://localhost:8000/api/posts/${post.id}/regenerate-image-prompt/`, {
                 method: 'POST',
             });
 
@@ -153,39 +219,40 @@ const PostDetailPage: React.FC = () => {
                 throw new Error('Erro ao gerar imagem');
             }
 
-            showToastMessage('Imagem sendo gerada em segundo plano');
-            // Recarregar post após alguns segundos
+            showToastMessage('Prompt de imagem sendo gerado em segundo plano');
             setTimeout(fetchPost, 3000);
         } catch (err) {
             console.error('Erro ao gerar imagem:', err);
-            showToastMessage('Erro ao gerar imagem', 'danger');
+            showToastMessage('Erro ao gerar prompt de imagem', 'danger');
         } finally {
             setGenerating(false);
         }
     };
 
-    const getStatusBadge = (status: string) => {
-        const statusConfig = {
-            draft: { variant: 'secondary', text: 'Rascunho' },
-            generated: { variant: 'success', text: 'Gerado' },
-            scheduled: { variant: 'primary', text: 'Agendado' },
-            published: { variant: 'info', text: 'Publicado' }
-        };
+    const showToastMessage = (message: string, variant: 'success' | 'danger' = 'success') => {
+        setToastMessage(message);
+        setToastVariant(variant);
+        setShowToast(true);
+    };
 
-        const config = statusConfig[status as keyof typeof statusConfig] ||
-            { variant: 'secondary', text: status };
-
-        return <Badge bg={config.variant}>{config.text}</Badge>;
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('pt-BR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     if (loading) {
         return (
             <Layout>
-                <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                     <Spinner animation="border" role="status">
                         <span className="visually-hidden">Carregando...</span>
                     </Spinner>
-                </Container>
+                </div>
             </Layout>
         );
     }
@@ -193,348 +260,345 @@ const PostDetailPage: React.FC = () => {
     if (error || !post) {
         return (
             <Layout>
-                <Container className="mt-4">
-                    <Alert variant="danger">
-                        {error || 'Post não encontrado'}
-                    </Alert>
-                    <Button variant="outline-primary" onClick={() => navigate('/posts')}>
-                        Voltar para Posts
-                    </Button>
-                </Container>
+                <Alert variant="danger" className="mt-4">
+                    {error || 'Post não encontrado'}
+                </Alert>
             </Layout>
         );
     }
 
     return (
         <Layout>
-            <Container className="mt-4">
-                <Row>
-                    {/* Breadcrumb */}
-                    <Col xs={12} className="mb-3">
-                        <Breadcrumb>
+            {/* Breadcrumb e Ações */}
+            <Row className="mb-3">
+                <Col xs={12}>
+                    <div className="d-flex align-items-center justify-content-between flex-wrap">
+                        <Breadcrumb className="mb-0">
                             <Breadcrumb.Item href="/">Home</Breadcrumb.Item>
                             <Breadcrumb.Item href="/posts">Posts</Breadcrumb.Item>
-                            <Breadcrumb.Item active>{post.title}</Breadcrumb.Item>
+                            <Breadcrumb.Item active>
+                                {post.title?.substring(0, 50)}{post.title?.length > 50 ? '...' : ''}
+                            </Breadcrumb.Item>
                         </Breadcrumb>
-                    </Col>
 
-                    {/* Conteúdo Principal */}
-                    <Col lg={8} md={12} className="mb-4">
-                        {/* Header do Post */}
-                        <Card className="mb-4">
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-start mb-3">
-                                    <div>
-                                        <h1 className="mb-2">{post.title}</h1>
-                                        <div className="mb-2">
-                                            {getStatusBadge(post.status)}
-                                            {theme && (
-                                                <Badge bg="outline-secondary" className="ms-2">
-                                                    {theme.name}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <small className="text-muted">
-                                            Criado em: {new Date(post.created_at).toLocaleDateString()}
-                                            {post.updated_at !== post.created_at && (
-                                                <> • Atualizado em: {new Date(post.updated_at).toLocaleDateString()}</>
-                                            )}
-                                        </small>
-                                    </div>
-                                </div>
-                            </Card.Body>
-                        </Card>
+                        <div className="d-flex align-items-center gap-2 mt-2 mt-md-0">
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() => navigate('/posts')}
+                            >
+                                ← Voltar
+                            </Button>
 
-                        {/* Conteúdo do Post */}
-                        <Card className="mb-4">
-                            <Card.Header>
-                                <h5>Conteúdo</h5>
-                            </Card.Header>
-                            <Card.Body>
-                                <ReactMarkdown>{post.content}</ReactMarkdown>
-                            </Card.Body>
-                        </Card>
-
-                        {/* Post Promocional */}
-                        {post.promotional_post && (
-                            <Card className="mb-4">
-                                <Card.Header className="d-flex justify-content-between align-items-center">
-                                    <h5>Post Promocional</h5>
-                                    <Button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        onClick={() => copyToClipboard(post.promotional_post!, 'Post promocional')}
-                                    >
-                                        Copiar
-                                    </Button>
-                                </Card.Header>
-                                <Card.Body>
-                                    <ReactMarkdown>{post.promotional_post}</ReactMarkdown>
-                                </Card.Body>
-                            </Card>
-                        )}
-
-                        {/* SEO */}
-                        {(post.seo_title || post.seo_description) && (
-                            <Card className="mb-4">
-                                <Card.Header>
-                                    <h5>SEO</h5>
-                                </Card.Header>
-                                <Card.Body>
-                                    {post.seo_title && (
-                                        <div className="mb-3">
-                                            <div className="d-flex justify-content-between align-items-center">
-                                                <strong>Título SEO:</strong>
-                                                <Button
-                                                    variant="outline-primary"
-                                                    size="sm"
-                                                    onClick={() => copyToClipboard(post.seo_title!, 'Título SEO')}
-                                                >
-                                                    Copiar
-                                                </Button>
-                                            </div>
-                                            <p className="mb-0 mt-1">{post.seo_title}</p>
-                                        </div>
-                                    )}
-                                    {post.seo_description && (
-                                        <div>
-                                            <div className="d-flex justify-content-between align-items-center">
-                                                <strong>Descrição SEO:</strong>
-                                                <Button
-                                                    variant="outline-primary"
-                                                    size="sm"
-                                                    onClick={() => copyToClipboard(post.seo_description!, 'Descrição SEO')}
-                                                >
-                                                    Copiar
-                                                </Button>
-                                            </div>
-                                            <p className="mb-0 mt-1">{post.seo_description}</p>
-                                        </div>
-                                    )}
-                                </Card.Body>
-                            </Card>
-                        )}
-
-                        {/* Prompt de Imagem */}
-                        {post.cover_image_prompt && (
-                            <Card className="mb-4">
-                                <Card.Header className="d-flex justify-content-between align-items-center">
-                                    <h6>Prompt de Imagem</h6>
-                                    <Button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        onClick={() => copyToClipboard(post.cover_image_prompt!, 'Prompt de imagem')}
-                                    >
-                                        Copiar
-                                    </Button>
-                                </Card.Header>
-                                <Card.Body>
-                                    <small className="text-muted">
-                                        {post.cover_image_prompt}
-                                    </small>
-                                </Card.Body>
-                            </Card>
-                        )}
-
-                        {/* Prompt de Geração */}
-                        {post.generation_prompt && (
-                            <Card>
-                                <Card.Header>
-                                    <h6>Prompt de Geração</h6>
-                                </Card.Header>
-                                <Card.Body>
-                                    <small className="text-muted">
-                                        {post.generation_prompt}
-                                    </small>
-                                </Card.Body>
-                            </Card>
-                        )}
-                    </Col>
-
-                    {/* Sidebar com Ações */}
-                    <Col lg={4} md={12}>
-                        <Card className="position-sticky" style={{ top: '20px' }}>
-                            <Card.Header>
-                                <h5>Ações</h5>
-                            </Card.Header>
-                            <Card.Body>
-                                <div className="d-grid gap-2">
-                                    <Button
-                                        variant="primary"
-                                        onClick={() => setShowEditModal(true)}
-                                    >
-                                        Editar Post
-                                    </Button>
-
-                                    <Button
-                                        variant="warning"
+                            <Dropdown as={ButtonGroup}>
+                                <Dropdown.Toggle variant="primary" size="sm">
+                                    Ações
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu>
+                                    <Dropdown.Item onClick={() => setShowEditModal(true)}>
+                                        ✏️ Editar Post
+                                    </Dropdown.Item>
+                                    <Dropdown.Item
                                         onClick={handleImprovePost}
                                         disabled={improving}
                                     >
-                                        {improving ? (
-                                            <>
-                                                <Spinner as="span" animation="border" size="sm" className="me-2" />
-                                                Melhorando...
-                                            </>
-                                        ) : (
-                                            'Melhorar Post'
-                                        )}
-                                    </Button>
-
-                                    <Button
-                                        variant="info"
-                                        onClick={handleGenerateImage}
-                                        disabled={generating}
+                                        {improving ? '⏳ Melhorando...' : '✨ Melhorar Post'}
+                                    </Dropdown.Item>
+                                    {post.post_type === 'article' && (
+                                        <Dropdown.Item
+                                            onClick={handleGenerateImage}
+                                            disabled={generating}
+                                        >
+                                            {generating ? '⏳ Gerando...' : '🖼️ Gerar Prompt de Imagem'}
+                                        </Dropdown.Item>
+                                    )}
+                                    <Dropdown.Divider />
+                                    <Dropdown.Item
+                                        onClick={() => copyToClipboard(post.content, 'Conteúdo')}
                                     >
-                                        {generating ? (
-                                            <>
-                                                <Spinner as="span" animation="border" size="sm" className="me-2" />
-                                                Gerando...
-                                            </>
-                                        ) : (
-                                            'Gerar Imagem'
-                                        )}
-                                    </Button>
+                                        📋 Copiar Conteúdo
+                                    </Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>
+                        </div>
+                    </div>
+                </Col>
+            </Row>
 
-                                    <Button
-                                        variant="success"
-                                        disabled={post.status === 'published'}
-                                    >
-                                        {post.status === 'published' ? 'Publicado' : 'Publicar'}
-                                    </Button>
+            <Row>
+                {/* Conteúdo Principal */}
+                <Col lg={8} md={12} className="mb-4">
+                    {/* Header do Post */}
+                    <Card className="mb-4">
+                        <Card.Body>
+                            <h1 className="mb-3">{post.title}</h1>
+                            <div className="mb-2">
+                                {getStatusBadge(post.status)}
+                                <Badge bg="secondary" className="ms-2">
+                                    {post.post_type === 'simple' ? 'Post Simples' : 'Artigo'}
+                                </Badge>
+                                {theme && (
+                                    <Badge bg="info" className="ms-2">
+                                        {theme.name}
+                                    </Badge>
+                                )}
+                            </div>
+                        </Card.Body>
+                    </Card>
 
-                                    <hr />
+                    {/* Conteúdo do Post */}
+                    <Card className="mb-4">
+                        <Card.Header>
+                            <h5 className="mb-0">Conteúdo</h5>
+                        </Card.Header>
+                        <Card.Body>
+                            <ReactMarkdown>{post.content}</ReactMarkdown>
+                        </Card.Body>
+                    </Card>
 
-                                    <Button
-                                        variant="outline-secondary"
-                                        onClick={() => navigate('/posts')}
-                                    >
-                                        Voltar para Posts
-                                    </Button>
+                    {/* Post Promocional */}
+                    {post.promotional_post && (
+                        <Card className="mb-4">
+                            <Card.Header className="d-flex justify-content-between align-items-center">
+                                <h5 className="mb-0">Post Promocional</h5>
+                                <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={() => copyToClipboard(post.promotional_post!, 'Post promocional')}
+                                >
+                                    📋 Copiar
+                                </Button>
+                            </Card.Header>
+                            <Card.Body>
+                                <ReactMarkdown>{post.promotional_post}</ReactMarkdown>
+                            </Card.Body>
+                        </Card>
+                    )}
+
+                    {/* SEO */}
+                    {(post.seo_title || post.seo_description) && (
+                        <Card className="mb-4">
+                            <Card.Header>
+                                <h5 className="mb-0">SEO</h5>
+                            </Card.Header>
+                            <Card.Body>
+                                {post.seo_title && (
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Título SEO:</label>
+                                        <div className="p-2 bg-light rounded">{post.seo_title}</div>
+                                    </div>
+                                )}
+                                {post.seo_description && (
+                                    <div>
+                                        <label className="form-label fw-bold">Descrição SEO:</label>
+                                        <div className="p-2 bg-light rounded">{post.seo_description}</div>
+                                    </div>
+                                )}
+                            </Card.Body>
+                        </Card>
+                    )}
+                </Col>
+
+                {/* Sidebar */}
+                <Col lg={4} md={12}>
+                    {/* Métricas */}
+                    <Card className="mb-4">
+                        <Card.Header>
+                            <h6 className="mb-0">📊 Métricas</h6>
+                        </Card.Header>
+                        <Card.Body>
+                            {(() => {
+                                const metrics = calculateMetrics(post.content);
+                                return (
+                                    <div className="row text-center g-3">
+                                        <div className="col-6">
+                                            <div className="border rounded p-2">
+                                                <div className="h5 mb-1 text-primary">{metrics.wordCount.toLocaleString()}</div>
+                                                <small className="text-muted">Palavras</small>
+                                            </div>
+                                        </div>
+                                        <div className="col-6">
+                                            <div className="border rounded p-2">
+                                                <div className="h5 mb-1 text-success">{metrics.charCount.toLocaleString()}</div>
+                                                <small className="text-muted">Caracteres</small>
+                                            </div>
+                                        </div>
+                                        <div className="col-6">
+                                            <div className="border rounded p-2">
+                                                <div className="h5 mb-1 text-info">{metrics.charCountNoSpaces.toLocaleString()}</div>
+                                                <small className="text-muted">Sem espaços</small>
+                                            </div>
+                                        </div>
+                                        <div className="col-6">
+                                            <div className="border rounded p-2">
+                                                <div className="h5 mb-1 text-warning">{metrics.readingTime} min</div>
+                                                <small className="text-muted">Leitura</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </Card.Body>
+                    </Card>
+
+                    {/* Informações de Data */}
+                    <Card className="mb-4">
+                        <Card.Header>
+                            <h6 className="mb-0">📅 Datas</h6>
+                        </Card.Header>
+                        <Card.Body>
+                            <div className="mb-3">
+                                <small className="text-muted d-block">Criado em:</small>
+                                <strong>{formatDate(post.created_at)}</strong>
+                            </div>
+                            {post.updated_at !== post.created_at && (
+                                <div className="mb-3">
+                                    <small className="text-muted d-block">Atualizado em:</small>
+                                    <strong>{formatDate(post.updated_at)}</strong>
+                                </div>
+                            )}
+                        </Card.Body>
+                    </Card>
+
+                    {/* Informações do Tema */}
+                    {theme && (
+                        <Card className="mb-4">
+                            <Card.Header>
+                                <h6 className="mb-0">�� Tema</h6>
+                            </Card.Header>
+                            <Card.Body>
+                                <div className="mb-2">
+                                    <strong>{theme.name}</strong>
+                                </div>
+                                {post.topic && (
+                                    <div className="mb-2">
+                                        <small className="text-muted">Tópico:</small>
+                                        <div>{post.topic}</div>
+                                    </div>
+                                )}
+                                {theme.stack && (
+                                    <div>
+                                        <small className="text-muted">Stack:</small>
+                                        <div>{theme.stack}</div>
+                                    </div>
+                                )}
+                            </Card.Body>
+                        </Card>
+                    )}
+
+                    {/* Prompt de Geração */}
+                    {post.generation_prompt && (
+                        <Card className="mb-4">
+                            <Card.Header>
+                                <h6 className="mb-0">🤖 Prompt de Geração</h6>
+                            </Card.Header>
+                            <Card.Body>
+                                <div className="small text-muted" style={{ fontSize: '0.85rem' }}>
+                                    {post.generation_prompt}
                                 </div>
                             </Card.Body>
                         </Card>
-                    </Col>
-                </Row>
+                    )}
 
-                {/* Modal para editar post */}
-                <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
-                    <Modal.Header closeButton>
-                        <Modal.Title>Editar Post</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <Form>
+                    {/* Prompt de Imagem de Capa */}
+                    {post.cover_image_prompt && (
+                        <Card className="mb-4">
+                            <Card.Header className="d-flex justify-content-between align-items-center">
+                                <h6 className="mb-0">🖼️ Prompt de Imagem</h6>
+                                <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={() => copyToClipboard(post.cover_image_prompt!, 'Prompt de imagem')}
+                                >
+                                    📋
+                                </Button>
+                            </Card.Header>
+                            <Card.Body>
+                                <div className="small text-muted" style={{ fontSize: '0.85rem' }}>
+                                    {post.cover_image_prompt}
+                                </div>
+                            </Card.Body>
+                        </Card>
+                    )}
+                </Col>
+            </Row>
+
+            {/* Modal de Edição */}
+            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Editar Post</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Título</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editData.title || post.title}
+                                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                            />
+                        </Form.Group>
+                        {post.topic && (
                             <Form.Group className="mb-3">
-                                <Form.Label>Título</Form.Label>
+                                <Form.Label>Tópico</Form.Label>
                                 <Form.Control
                                     type="text"
-                                    value={editData.title || ''}
-                                    onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                                    value={editData.topic || post.topic}
+                                    onChange={(e) => setEditData({ ...editData, topic: e.target.value })}
                                 />
                             </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Conteúdo</Form.Label>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={10}
-                                    value={editData.content || ''}
-                                    onChange={(e) => setEditData({ ...editData, content: e.target.value })}
-                                />
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Post Promocional</Form.Label>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={4}
-                                    value={editData.promotional_post || ''}
-                                    onChange={(e) => setEditData({ ...editData, promotional_post: e.target.value })}
-                                />
-                            </Form.Group>
-
-                            <Row>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Título SEO</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            value={editData.seo_title || ''}
-                                            onChange={(e) => setEditData({ ...editData, seo_title: e.target.value })}
-                                        />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Status</Form.Label>
-                                        <Form.Select
-                                            value={editData.status || ''}
-                                            onChange={(e) => setEditData({ ...editData, status: e.target.value as Post['status'] })}
-                                        >
-                                            <option value="draft">Rascunho</option>
-                                            <option value="generated">Gerado</option>
-                                            <option value="scheduled">Agendado</option>
-                                        </Form.Select>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Descrição SEO</Form.Label>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={3}
-                                    value={editData.seo_description || ''}
-                                    onChange={(e) => setEditData({ ...editData, seo_description: e.target.value })}
-                                />
-                            </Form.Group>
-
-                            <Form.Group className="mb-3">
-                                <Form.Label>Link</Form.Label>
-                                <Form.Control
-                                    type="url"
-                                    value={editData.link || ''}
-                                    onChange={(e) => setEditData({ ...editData, link: e.target.value })}
-                                />
-                            </Form.Group>
-                        </Form>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            variant="primary"
-                            onClick={handleUpdatePost}
-                            disabled={updating}
-                        >
-                            {updating ? (
-                                <>
-                                    <Spinner as="span" animation="border" size="sm" className="me-2" />
-                                    Salvando...
-                                </>
-                            ) : (
-                                'Salvar Alterações'
-                            )}
-                        </Button>
-                    </Modal.Footer>
-                </Modal>
-
-                {/* Toast para notificações */}
-                <ToastContainer position="bottom-end" className="p-3">
-                    <Toast
-                        show={showToast}
-                        onClose={() => setShowToast(false)}
-                        delay={5000}
-                        autohide
-                        bg={toastVariant}
+                        )}
+                        <Form.Group className="mb-3">
+                            <Form.Label>Status</Form.Label>
+                            <Form.Select
+                                value={editData.status || post.status}
+                                onChange={(e) => setEditData({ ...editData, status: e.target.value as 'draft' | 'generated' | 'scheduled' | 'published' })}
+                            >
+                                <option value="draft">Rascunho</option>
+                                <option value="published">Publicado</option>
+                                <option value="generated">Gerado</option>
+                                <option value="scheduled">Agendado</option>
+                            </Form.Select>
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Conteúdo</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={10}
+                                value={editData.content || post.content}
+                                onChange={(e) => setEditData({ ...editData, content: e.target.value })}
+                            />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={handleUpdatePost}
+                        disabled={updating}
                     >
-                        <Toast.Body className="text-white">
-                            {toastMessage}
-                        </Toast.Body>
-                    </Toast>
-                </ToastContainer>
-            </Container>
+                        {updating ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Toast de Notificação */}
+            <ToastContainer position="bottom-end" className="p-3">
+                <Toast
+                    show={showToast}
+                    onClose={() => setShowToast(false)}
+                    delay={3000}
+                    autohide
+                    bg={toastVariant}
+                >
+                    <Toast.Body className="text-white">
+                        {toastMessage}
+                    </Toast.Body>
+                </Toast>
+            </ToastContainer>
         </Layout>
     );
 };
