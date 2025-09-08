@@ -464,7 +464,7 @@ const PostDetailPage: React.FC = () => {
                     {theme && (
                         <Card className="mb-4">
                             <Card.Header>
-                                <h6 className="mb-0">�� Tema</h6>
+                                <h6 className="mb-0">Tema</h6>
                             </Card.Header>
                             <Card.Body>
                                 <div className="mb-2">
