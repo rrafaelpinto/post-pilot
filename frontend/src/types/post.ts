@@ -12,6 +12,8 @@ export interface Post {
     link?: string;
     cover_image_prompt?: string;
     generation_prompt?: string;
+    ai_model_used?: string;
+    ai_provider_used?: string;
     created_at: string;
     updated_at: string;
 }
