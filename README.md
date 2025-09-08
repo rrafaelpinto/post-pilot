@@ -63,7 +63,7 @@ A modern full-stack application for generating LinkedIn posts and articles using
 ### 1. Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/rrafaelpinto/post-pilot
 cd post-pilot
 ```
 

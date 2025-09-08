@@ -1,9 +1,149 @@
 import json
+import re
+import requests
+import logging
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
 import openai
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+
+def clean_json_response(content: str) -> str:
+    """
+    Clean and prepare AI response content for JSON parsing with aggressive fallback
+    """
+    if not content:
+        return content
+
+    # Remove markdown code blocks if present
+    if content.startswith("```json"):
+        content = content[7:]
+    if content.endswith("```"):
+        content = content[:-3]
+
+    # Remove any leading/trailing whitespace
+    content = content.strip()
+
+    # First attempt: Standard cleaning
+    # Remove known control characters by their byte values
+    chars_to_remove = [
+        "\x00",
+        "\x01",
+        "\x02",
+        "\x03",
+        "\x04",
+        "\x05",
+        "\x06",
+        "\x07",
+        "\x08",
+        "\x0b",
+        "\x0c",
+        "\x0e",
+        "\x0f",
+        "\x10",
+        "\x11",
+        "\x12",
+        "\x13",
+        "\x14",
+        "\x15",
+        "\x16",
+        "\x17",
+        "\x18",
+        "\x19",
+        "\x1a",
+        "\x1b",
+        "\x1c",
+        "\x1d",
+        "\x1e",
+        "\x1f",
+        "\x7f",
+    ]
+
+    for char in chars_to_remove:
+        content = content.replace(char, "")
+
+    # Use regex to catch any remaining control characters
+    content = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", content)
+
+    # Remove ANSI escape sequences
+    content = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", content)
+
+    # Fix escape sequences but preserve valid JSON escapes
+    content = re.sub(r"\\(?![\"\\\/bfnrt])", "", content)
+
+    # Try to parse - if successful, return
+    try:
+        json.loads(content)
+        return content
+    except json.JSONDecodeError:
+        logger.warning(
+            "Standard JSON cleaning failed, attempting aggressive reconstruction"
+        )
+
+        # Fallback: Ultra-aggressive cleaning by reconstructing character by character
+        safe_chars = []
+        for char in content:
+            ascii_code = ord(char)
+            # Keep only safe ASCII characters, spaces, tabs, newlines and carriage returns
+            if (ascii_code >= 32 and ascii_code <= 126) or char in [
+                "\n",
+                "\t",
+                "\r",
+                " ",
+            ]:
+                safe_chars.append(char)
+
+        reconstructed = "".join(safe_chars)
+
+        # Try again
+        try:
+            json.loads(reconstructed)
+            return reconstructed
+        except json.JSONDecodeError:
+            # Last resort: Extract content manually and rebuild JSON
+            logger.warning(
+                "JSON parsing still failed, attempting manual reconstruction"
+            )
+
+            try:
+                # Extract "improved_content" and "improvement_summary" using regex
+                content_match = re.search(
+                    r'"improved_content"\s*:\s*"(.*?)"(?=\s*,)',
+                    reconstructed,
+                    re.DOTALL,
+                )
+                summary_match = re.search(
+                    r'"improvement_summary"\s*:\s*"(.*?)"', reconstructed, re.DOTALL
+                )
+
+                if content_match and summary_match:
+                    improved_content = content_match.group(1)
+                    summary = summary_match.group(1)
+
+                    # Clean up the extracted content
+                    improved_content = improved_content.replace('"', '"')
+                    summary = summary.replace('"', '"')
+
+                    # Create a clean JSON structure
+                    clean_data = {
+                        "improved_content": improved_content,
+                        "improvement_summary": summary,
+                    }
+
+                    result = json.dumps(clean_data, ensure_ascii=False)
+                    logger.info("Successfully reconstructed JSON manually")
+                    return result
+                else:
+                    logger.error("Could not extract content using regex")
+                    return reconstructed
+            except Exception as e:
+                logger.error(f"Manual JSON reconstruction failed: {e}")
+                return reconstructed
+
+    return content
 
 
 class AIServiceBase(ABC):
@@ -249,7 +389,7 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         improvement_prompt = f"""
         You are an expert technical content creator and code reviewer, specialized in creating secure, production-ready content for developers.
 
-        **TASK:** Enhance and improve the following {post_type} content with:
+        **TASK:** Enhance and improve the following {post_type} content with enhanced details, practical examples, and secure code.
 
         **ENHANCEMENT REQUIREMENTS:**
         1. **Extend with More Details**: Add deeper explanations for each key point
@@ -290,9 +430,11 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         - Performance tips
         - Common pitfalls to avoid
         - Related concepts and connections
-        - Relevant hashtags (8-8 relevant hashtags)
+        - Relevant hashtags (6-8 relevant hashtags)
 
-        Return the improved content in JSON format:
+        **CRITICAL:** Return only valid JSON. No markdown code blocks, no additional text, just the JSON object.
+
+        Return the improved content in this exact JSON format:
         {{
             "improved_content": "Enhanced content in Markdown format with detailed explanations and secure code examples",
             "improvement_summary": "Brief summary of key improvements made"
@@ -310,7 +452,7 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         messages = [
             {
                 "role": "system",
-                "content": "You are an expert technical content creator and security-focused code reviewer. Always respond with valid JSON. Create production-ready, secure code examples with comprehensive explanations.",
+                "content": "You are an expert technical content creator and security-focused code reviewer. You MUST respond with valid JSON only. Never include markdown code blocks or any text outside the JSON object. Always ensure your JSON is properly formatted and escaped.",
             },
             {"role": "user", "content": improvement_prompt},
         ]
@@ -318,25 +460,109 @@ Please generate NEW topics that complement these existing ones, avoiding repetit
         try:
             content = self._make_request(messages)
             if content:
-                content = content.strip()
-                # Remove possible markdown code blocks
-                if content.startswith("```json"):
-                    content = content[7:]
-                if content.endswith("```"):
-                    content = content[:-3]
+                content = clean_json_response(content)
 
-                return json.loads(content)
+                # Try to parse JSON
+                try:
+                    parsed = json.loads(content)
+                    # Additional validation: ensure required keys exist
+                    if isinstance(parsed, dict) and "improved_content" in parsed:
+                        return parsed
+                    else:
+                        raise json.JSONDecodeError("Missing required keys", content, 0)
+                except json.JSONDecodeError as json_error:
+                    logger.warning(f"JSON decode error: {json_error}")
+                    logger.warning(
+                        f"Raw content that failed to parse: {content[:500]}..."
+                    )
+
+                    # Try to extract JSON from response if it's embedded in text
+                    start = content.find("{")
+                    end = content.rfind("}") + 1
+                    if start != -1 and end != 0:
+                        try:
+                            extracted_json = content[start:end]
+                            extracted_json = clean_json_response(extracted_json)
+
+                            parsed = json.loads(extracted_json)
+                            if (
+                                isinstance(parsed, dict)
+                                and "improved_content" in parsed
+                            ):
+                                logger.info(
+                                    "Successfully recovered content using JSON extraction"
+                                )
+                                return parsed
+                            else:
+                                raise json.JSONDecodeError(
+                                    "Missing required keys", extracted_json, 0
+                                )
+                        except json.JSONDecodeError:
+                            logger.warning(
+                                "JSON extraction from embedded content also failed"
+                            )
+
+                    # If JSON parsing still fails, try to salvage content with regex
+                    try:
+                        # Extract content between quotes after "improved_content"
+                        content_match = re.search(
+                            r'"improved_content"\s*:\s*"(.*?)"(?=\s*,|\s*})',
+                            content,
+                            re.DOTALL,
+                        )
+                        if content_match:
+                            improved_text = content_match.group(1)
+                            # Unescape the content properly
+                            improved_text = (
+                                improved_text.replace('\\"', '"')
+                                .replace("\\\\", "\\")
+                                .replace("\\n", "\n")
+                            )
+
+                            logger.info(
+                                "Successfully recovered content using regex fallback"
+                            )
+                            return {
+                                "improved_content": improved_text,
+                                "improvement_summary": "Content extracted using fallback parsing due to JSON format issues.",
+                            }
+                    except Exception as e:
+                        logger.error(f"Fallback content extraction failed: {e}")
+
+                    # If all parsing fails, return error with details
+                    error_msg = f"JSON parsing failed: {str(json_error)}. The AI response contained invalid characters or format."
+                    logger.error(error_msg)
+                    return {
+                        "improved_content": current_content,
+                        "improvement_summary": error_msg,
+                    }
             else:
                 return {
                     "improved_content": current_content,
-                    "improvement_summary": "Content could not be improved at this time.",
+                    "improvement_summary": "No content received from AI service.",
                 }
 
         except Exception as e:
-            print(f"Error improving content: {e}")
+            error_message = str(e)
+            print(f"Error improving content: {error_message}")
+
+            # Provide more specific error information
+            if "Invalid control character" in error_message:
+                error_summary = "AI response contained invalid control characters. This is usually a temporary API issue."
+            elif "timeout" in error_message.lower():
+                error_summary = "Request timed out. Please try again."
+            elif "rate limit" in error_message.lower():
+                error_summary = (
+                    "API rate limit exceeded. Please wait a moment and try again."
+                )
+            elif "api key" in error_message.lower():
+                error_summary = "API authentication error. Please check configuration."
+            else:
+                error_summary = f"Unexpected error: {error_message}"
+
             return {
                 "improved_content": current_content,
-                "improvement_summary": "Content could not be improved due to an error.",
+                "improvement_summary": error_summary,
             }
 
     def regenerate_cover_image_prompt(
@@ -466,8 +692,6 @@ class GrokService(AIServiceBase):
 
     def _make_request(self, messages: List[Dict], **kwargs) -> str:
         """Make request to Grok API"""
-        import requests
-
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -501,8 +725,6 @@ class GeminiService(AIServiceBase):
 
     def _make_request(self, messages: List[Dict], **kwargs) -> str:
         """Make request to Gemini API"""
-        import requests
-
         # Convert OpenAI-style messages to Gemini format
         gemini_messages = []
         for msg in messages:

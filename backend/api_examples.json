@@ -1,0 +1,417 @@
+{
+    "info": {
+        "title": "Post Pilot API - Exemplos de Uso",
+        "version": "1.0.0",
+        "description": "Coleção de exemplos práticos para usar a API do Post Pilot"
+    },
+    "examples": {
+        "dashboard": {
+            "stats": {
+                "description": "Obter estatísticas do sistema",
+                "method": "GET",
+                "url": "http://localhost:8000/api/dashboard/stats/",
+                "response": {
+                    "total_themes": 5,
+                    "total_posts": 23,
+                    "published_posts": 15,
+                    "draft_posts": 5,
+                    "generated_posts": 3,
+                    "ai_service": "OpenAIService",
+                    "recent_posts": [
+                        {
+                            "id": 1,
+                            "title": "Exemplo de Post",
+                            "status": "published",
+                            "created_at": "2025-09-08T10:30:00Z"
+                        }
+                    ],
+                    "recent_themes": [
+                        {
+                            "id": 1,
+                            "title": "Tecnologia",
+                            "posts_count": 5,
+                            "created_at": "2025-09-08T09:00:00Z"
+                        }
+                    ]
+                }
+            }
+        },
+        "themes": {
+            "create": {
+                "description": "Criar um novo tema",
+                "method": "POST",
+                "url": "http://localhost:8000/api/themes/",
+                "request": {
+                    "title": "Inteligência Artificial"
+                },
+                "response": {
+                    "id": 1,
+                    "title": "Inteligência Artificial",
+                    "created_at": "2025-09-08T10:00:00Z",
+                    "updated_at": "2025-09-08T10:00:00Z",
+                    "is_active": true,
+                    "processing_status": "idle",
+                    "is_processing": false,
+                    "suggested_topics": null,
+                    "topics_generated_at": null,
+                    "posts_count": 0,
+                    "articles_count": 0,
+                    "simple_posts_count": 0
+                }
+            },
+            "list": {
+                "description": "Listar todos os temas",
+                "method": "GET",
+                "url": "http://localhost:8000/api/themes/",
+                "response": {
+                    "count": 1,
+                    "next": null,
+                    "previous": null,
+                    "results": [
+                        {
+                            "id": 1,
+                            "title": "Inteligência Artificial",
+                            "created_at": "2025-09-08T10:00:00Z",
+                            "posts_count": 0
+                        }
+                    ]
+                }
+            },
+            "generate_topics": {
+                "description": "Gerar tópicos para um tema",
+                "method": "POST",
+                "url": "http://localhost:8000/api/themes/1/generate_topics/",
+                "response": {
+                    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "message": "Topic generation started. Task ID: 123e4567-e89b-12d3-a456-426614174000",
+                    "existing_topics_count": 0,
+                    "theme_id": 1
+                }
+            },
+            "generate_post": {
+                "description": "Gerar post baseado em tópico",
+                "method": "POST",
+                "url": "http://localhost:8000/api/themes/1/generate_post/",
+                "request": {
+                    "topic": "Machine Learning no cotidiano",
+                    "post_type": "article",
+                    "topic_data": {
+                        "description": "Como a IA está transformando nosso dia a dia",
+                        "keywords": [
+                            "IA",
+                            "machine learning",
+                            "tecnologia"
+                        ]
+                    }
+                },
+                "response": {
+                    "task_id": "456e7890-e89b-12d3-a456-426614174001",
+                    "message": "Post generation started. Task ID: 456e7890-e89b-12d3-a456-426614174001",
+                    "theme_id": 1,
+                    "topic": "Machine Learning no cotidiano",
+                    "post_type": "article"
+                }
+            },
+            "status": {
+                "description": "Verificar status de processamento do tema",
+                "method": "GET",
+                "url": "http://localhost:8000/api/themes/1/status/",
+                "response": {
+                    "theme_id": 1,
+                    "is_processing": false,
+                    "processing_status": "completed",
+                    "status": "completed",
+                    "has_topics": true,
+                    "topics_count": 5
+                }
+            }
+        },
+        "posts": {
+            "create": {
+                "description": "Criar post manualmente",
+                "method": "POST",
+                "url": "http://localhost:8000/api/posts/",
+                "request": {
+                    "theme": 1,
+                    "topic": "Post criado manualmente",
+                    "post_type": "simple"
+                },
+                "response": {
+                    "id": 1,
+                    "theme": 1,
+                    "theme_title": "Inteligência Artificial",
+                    "post_type": "simple",
+                    "title": null,
+                    "content": null,
+                    "topic": "Post criado manualmente",
+                    "status": "draft",
+                    "created_at": "2025-09-08T11:00:00Z"
+                }
+            },
+            "update": {
+                "description": "Atualizar post",
+                "method": "PATCH",
+                "url": "http://localhost:8000/api/posts/1/",
+                "request": {
+                    "title": "Como a IA está mudando o mundo",
+                    "content": "A inteligência artificial está revolucionando diversos setores...",
+                    "status": "draft"
+                },
+                "response": {
+                    "id": 1,
+                    "title": "Como a IA está mudando o mundo",
+                    "content": "A inteligência artificial está revolucionando diversos setores...",
+                    "status": "draft",
+                    "updated_at": "2025-09-08T11:30:00Z"
+                }
+            },
+            "improve": {
+                "description": "Melhorar conteúdo do post com IA",
+                "method": "POST",
+                "url": "http://localhost:8000/api/posts/1/improve/",
+                "response": {
+                    "task_id": "789e1234-e89b-12d3-a456-426614174002",
+                    "message": "Post improvement started. Task ID: 789e1234-e89b-12d3-a456-426614174002",
+                    "post_id": 1
+                }
+            },
+            "regenerate_image_prompt": {
+                "description": "Gerar prompt de imagem para artigo",
+                "method": "POST",
+                "url": "http://localhost:8000/api/posts/1/regenerate_image_prompt/",
+                "response": {
+                    "task_id": "abc5678-e89b-12d3-a456-426614174003",
+                    "message": "Image prompt generation started. Task ID: abc5678-e89b-12d3-a456-426614174003",
+                    "post_id": 1,
+                    "action_type": "generation"
+                }
+            },
+            "publish": {
+                "description": "Publicar post",
+                "method": "POST",
+                "url": "http://localhost:8000/api/posts/1/publish/",
+                "response": {
+                    "message": "Post \"Como a IA está mudando o mundo\" published successfully!",
+                    "post_id": 1,
+                    "published_at": "2025-09-08T12:00:00Z"
+                }
+            },
+            "status": {
+                "description": "Verificar status de processamento do post",
+                "method": "GET",
+                "url": "http://localhost:8000/api/posts/1/status/",
+                "response": {
+                    "post_id": 1,
+                    "is_processing": false,
+                    "processing_status": "completed",
+                    "status": "completed",
+                    "title": "Como a IA está mudando o mundo",
+                    "content_length": 1250
+                }
+            }
+        },
+        "tasks": {
+            "check": {
+                "description": "Verificar status de task",
+                "method": "GET",
+                "url": "http://localhost:8000/api/tasks/check/?task_id=123e4567-e89b-12d3-a456-426614174000",
+                "response_success": {
+                    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "state": "SUCCESS",
+                    "result": {
+                        "success": true,
+                        "message": "Topics generated successfully",
+                        "theme_id": 1,
+                        "topics_count": 5
+                    },
+                    "info": null
+                },
+                "response_pending": {
+                    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "state": "PENDING",
+                    "result": null,
+                    "info": null
+                },
+                "response_failure": {
+                    "task_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "state": "FAILURE",
+                    "result": null,
+                    "info": {
+                        "error": "API rate limit exceeded",
+                        "details": "Please try again in a few minutes"
+                    }
+                }
+            }
+        }
+    },
+    "workflows": {
+        "complete_content_creation": {
+            "description": "Fluxo completo de criação de conteúdo",
+            "steps": [
+                {
+                    "step": 1,
+                    "action": "Criar tema",
+                    "method": "POST",
+                    "url": "/api/themes/",
+                    "data": {
+                        "title": "Sustentabilidade"
+                    }
+                },
+                {
+                    "step": 2,
+                    "action": "Gerar tópicos",
+                    "method": "POST",
+                    "url": "/api/themes/{id}/generate_topics/"
+                },
+                {
+                    "step": 3,
+                    "action": "Aguardar processamento",
+                    "method": "GET",
+                    "url": "/api/tasks/check/?task_id={task_id}",
+                    "wait_for": "SUCCESS"
+                },
+                {
+                    "step": 4,
+                    "action": "Verificar tópicos gerados",
+                    "method": "GET",
+                    "url": "/api/themes/{id}/"
+                },
+                {
+                    "step": 5,
+                    "action": "Gerar post",
+                    "method": "POST",
+                    "url": "/api/themes/{id}/generate_post/",
+                    "data": {
+                        "topic": "Energia renovável",
+                        "post_type": "article"
+                    }
+                },
+                {
+                    "step": 6,
+                    "action": "Aguardar geração",
+                    "method": "GET",
+                    "url": "/api/tasks/check/?task_id={task_id}",
+                    "wait_for": "SUCCESS"
+                },
+                {
+                    "step": 7,
+                    "action": "Revisar e melhorar (opcional)",
+                    "method": "POST",
+                    "url": "/api/posts/{id}/improve/"
+                },
+                {
+                    "step": 8,
+                    "action": "Gerar prompt de imagem",
+                    "method": "POST",
+                    "url": "/api/posts/{id}/regenerate_image_prompt/"
+                },
+                {
+                    "step": 9,
+                    "action": "Publicar",
+                    "method": "POST",
+                    "url": "/api/posts/{id}/publish/"
+                }
+            ]
+        },
+        "batch_post_creation": {
+            "description": "Criação em lote de posts para um tema",
+            "steps": [
+                {
+                    "step": 1,
+                    "action": "Criar tema",
+                    "method": "POST",
+                    "url": "/api/themes/"
+                },
+                {
+                    "step": 2,
+                    "action": "Gerar tópicos",
+                    "method": "POST",
+                    "url": "/api/themes/{id}/generate_topics/"
+                },
+                {
+                    "step": 3,
+                    "action": "Para cada tópico, gerar post",
+                    "method": "POST",
+                    "url": "/api/themes/{id}/generate_post/",
+                    "repeat": "for_each_topic"
+                },
+                {
+                    "step": 4,
+                    "action": "Monitorar todas as tasks",
+                    "method": "GET",
+                    "url": "/api/tasks/check/?task_id={task_id}",
+                    "repeat": "for_each_task"
+                }
+            ]
+        }
+    },
+    "error_handling": {
+        "common_errors": {
+            "400": {
+                "description": "Dados inválidos",
+                "example": {
+                    "error": "Invalid data",
+                    "details": {
+                        "title": [
+                            "This field is required."
+                        ]
+                    }
+                }
+            },
+            "404": {
+                "description": "Recurso não encontrado",
+                "example": {
+                    "error": "Not found",
+                    "detail": "Theme with id 999 not found"
+                }
+            },
+            "500": {
+                "description": "Erro interno",
+                "example": {
+                    "error": "Internal server error",
+                    "detail": "An unexpected error occurred"
+                }
+            }
+        },
+        "task_errors": {
+            "ai_service_unavailable": {
+                "state": "FAILURE",
+                "info": {
+                    "error": "AI service unavailable",
+                    "details": "Unable to connect to OpenAI API"
+                }
+            },
+            "rate_limit": {
+                "state": "FAILURE",
+                "info": {
+                    "error": "Rate limit exceeded",
+                    "details": "Please try again in a few minutes"
+                }
+            },
+            "timeout": {
+                "state": "FAILURE",
+                "info": {
+                    "error": "Task timeout",
+                    "details": "Task took too long to complete"
+                }
+            }
+        }
+    },
+    "tips": {
+        "performance": [
+            "Use paginação para listas grandes",
+            "Monitore tasks assíncronas para evitar polling desnecessário",
+            "Cache respostas de estatísticas quando possível"
+        ],
+        "ai_usage": [
+            "Tópicos mais específicos geram conteúdo de melhor qualidade",
+            "Use 'article' para conteúdo longo, 'simple' para posts rápidos",
+            "Aguarde processamento completo antes de fazer melhorias"
+        ],
+        "error_handling": [
+            "Sempre verifique status codes das respostas",
+            "Implemente retry para falhas temporárias",
+            "Log erros de tasks para debugging"
+        ]
+    }
+}

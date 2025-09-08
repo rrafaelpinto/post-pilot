@@ -116,7 +116,6 @@ class GenerateTopicsSerializer(serializers.Serializer):
 
 
 class GeneratePostSerializer(serializers.Serializer):
-    theme_id = serializers.IntegerField()
     topic = serializers.CharField()
     post_type = serializers.ChoiceField(choices=["simple", "article"], default="simple")
     topic_data = serializers.JSONField(required=False)

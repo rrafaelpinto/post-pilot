@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     "corsheaders",
     "django_celery_beat",
     "core",
@@ -120,6 +122,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -199,7 +202,67 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+# ==============================
+# DRF SPECTACULAR CONFIGURATION (SWAGGER)
+# ==============================
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Post Pilot API",
+    "DESCRIPTION": """
+    API completa para o sistema Post Pilot - Gerador de conteúdo com IA.
+    
+    ## Funcionalidades principais:
+    
+    * **Temas**: Gerencie temas para criação de conteúdo
+    * **Posts**: Crie e gerencie posts e artigos  
+    * **Dashboard**: Visualize estatísticas e resumos
+    * **Tasks**: Monitore processamento assíncrono
+    
+    ## Recursos de IA:
+    
+    * Geração de tópicos para temas
+    * Criação automática de posts
+    * Melhoria de conteúdo existente
+    * Geração de prompts para imagens de capa
+    
+    ## Monitoramento:
+    
+    * Status de processamento em tempo real
+    * Verificação de tasks do Celery
+    * Estatísticas do dashboard
+    """,
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
+        "displayOperationId": False,
+        "defaultModelsExpandDepth": 1,
+        "defaultModelExpandDepth": 1,
+        "defaultModelRendering": "example",
+        "displayRequestDuration": True,
+        "docExpansion": "none",
+        "filter": True,
+        "showExtensions": True,
+        "showCommonExtensions": True,
+    },
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": False,
+    "ENABLE_DJANGO_DEPLOY_CHECK": False,
+    "DISABLE_ERRORS_AND_WARNINGS": True,
+}
+
+# Use sidecar for serving static files
+SPECTACULAR_SETTINGS.update(
+    {
+        "SWAGGER_UI_DIST": "SIDECAR",
+        "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+        "REDOC_DIST": "SIDECAR",
+    }
+)
 
 # ==============================
 # CORS CONFIGURATION

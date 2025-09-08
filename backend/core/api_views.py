@@ -7,6 +7,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 from .models import Post, Theme
 from .serializers import (
@@ -26,8 +28,25 @@ from .tasks import (
 )
 
 
+@extend_schema_view(
+    stats=extend_schema(
+        summary="Estatísticas do Dashboard",
+        description="Retorna estatísticas gerais do sistema incluindo contadores de temas, posts, e listagem dos itens mais recentes.",
+        responses={200: "Estatísticas recuperadas com sucesso"},
+        tags=["Dashboard"],
+    )
+)
 class DashboardViewSet(viewsets.ViewSet):
-    """ViewSet para estatísticas do dashboard"""
+    """
+    ViewSet para estatísticas do dashboard.
+
+    Fornece endpoints para recuperar informações estatísticas
+    sobre o sistema, incluindo:
+    - Contadores de temas e posts
+    - Status dos posts por categoria
+    - Serviço de IA ativo
+    - Listagem dos itens mais recentes
+    """
 
     permission_classes = [AllowAny]
 
@@ -60,8 +79,76 @@ class DashboardViewSet(viewsets.ViewSet):
         )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="Listar Temas",
+        description="Retorna lista paginada de todos os temas ativos ordenados por data de criação.",
+        tags=["Temas"],
+    ),
+    create=extend_schema(
+        summary="Criar Tema",
+        description="Cria um novo tema para geração de conteúdo.",
+        tags=["Temas"],
+    ),
+    retrieve=extend_schema(
+        summary="Detalhar Tema",
+        description="Retorna detalhes completos de um tema específico.",
+        tags=["Temas"],
+    ),
+    update=extend_schema(
+        summary="Atualizar Tema",
+        description="Atualiza todas as informações de um tema.",
+        tags=["Temas"],
+    ),
+    partial_update=extend_schema(
+        summary="Atualizar Tema Parcialmente",
+        description="Atualiza parcialmente as informações de um tema.",
+        tags=["Temas"],
+    ),
+    destroy=extend_schema(
+        summary="Deletar Tema",
+        description="Remove um tema do sistema (soft delete).",
+        tags=["Temas"],
+    ),
+    generate_topics=extend_schema(
+        summary="Gerar Tópicos",
+        description="Inicia processo de geração de tópicos usando IA para o tema especificado.",
+        responses={200: "Geração de tópicos iniciada com sucesso"},
+        tags=["Temas", "IA"],
+    ),
+    generate_post=extend_schema(
+        summary="Gerar Post",
+        description="Inicia processo de geração de post usando IA baseado em um tópico específico.",
+        request=GeneratePostSerializer,
+        responses={200: "Geração de post iniciada com sucesso"},
+        tags=["Temas", "IA"],
+    ),
+    posts=extend_schema(
+        summary="Posts do Tema",
+        description="Lista todos os posts pertencentes a um tema específico.",
+        responses={200: PostSerializer(many=True)},
+        tags=["Temas"],
+    ),
+    status=extend_schema(
+        summary="Status do Tema",
+        description="Verifica o status de processamento atual do tema.",
+        responses={200: "Status recuperado com sucesso"},
+        tags=["Temas"],
+    ),
+)
 class ThemeViewSet(viewsets.ModelViewSet):
-    """ViewSet para gerenciamento de temas"""
+    """
+    ViewSet para gerenciamento completo de temas.
+
+    Os temas são o núcleo do sistema, representando categorias
+    ou assuntos para os quais o conteúdo será gerado.
+
+    Funcionalidades principais:
+    - CRUD completo de temas
+    - Geração automática de tópicos com IA
+    - Geração de posts baseados em tópicos
+    - Monitoramento de status de processamento
+    """
 
     permission_classes = [AllowAny]
 
@@ -162,8 +249,75 @@ class ThemeViewSet(viewsets.ModelViewSet):
         )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="Listar Posts",
+        description="Retorna lista paginada de todos os posts ordenados por data de criação.",
+        tags=["Posts"],
+    ),
+    create=extend_schema(
+        summary="Criar Post",
+        description="Cria um novo post manualmente.",
+        tags=["Posts"],
+    ),
+    retrieve=extend_schema(
+        summary="Detalhar Post",
+        description="Retorna detalhes completos de um post específico.",
+        tags=["Posts"],
+    ),
+    update=extend_schema(
+        summary="Atualizar Post",
+        description="Atualiza todas as informações de um post.",
+        tags=["Posts"],
+    ),
+    partial_update=extend_schema(
+        summary="Atualizar Post Parcialmente",
+        description="Atualiza parcialmente as informações de um post.",
+        tags=["Posts"],
+    ),
+    destroy=extend_schema(
+        summary="Deletar Post", description="Remove um post do sistema.", tags=["Posts"]
+    ),
+    improve=extend_schema(
+        summary="Melhorar Post",
+        description="Inicia processo de melhoria do conteúdo do post usando IA.",
+        responses={200: "Processo de melhoria iniciado com sucesso"},
+        tags=["Posts", "IA"],
+    ),
+    regenerate_image_prompt=extend_schema(
+        summary="Regenerar Prompt de Imagem",
+        description="Gera ou regenera o prompt para imagem de capa do artigo.",
+        responses={200: "Geração de prompt iniciada com sucesso"},
+        tags=["Posts", "IA"],
+    ),
+    publish=extend_schema(
+        summary="Publicar Post",
+        description="Marca o post como publicado e define a data de publicação.",
+        responses={200: "Post publicado com sucesso"},
+        tags=["Posts"],
+    ),
+    status=extend_schema(
+        summary="Status do Post",
+        description="Verifica o status de processamento atual do post.",
+        responses={200: "Status recuperado com sucesso"},
+        tags=["Posts"],
+    ),
+)
 class PostViewSet(viewsets.ModelViewSet):
-    """ViewSet para gerenciamento de posts"""
+    """
+    ViewSet para gerenciamento completo de posts.
+
+    Os posts são o conteúdo gerado pelo sistema, podendo ser:
+    - Posts simples: conteúdo curto para redes sociais
+    - Artigos: conteúdo longo e detalhado
+
+    Funcionalidades principais:
+    - CRUD completo de posts
+    - Melhoria de conteúdo com IA
+    - Geração de prompts para imagens
+    - Controle de publicação
+    - Monitoramento de status de processamento
+    """
 
     permission_classes = [AllowAny]
     queryset = Post.objects.all().order_by("-created_at")
@@ -270,8 +424,38 @@ class PostViewSet(viewsets.ModelViewSet):
         )
 
 
+@extend_schema_view(
+    check=extend_schema(
+        summary="Verificar Status de Task",
+        description="Verifica o status de processamento de uma task assíncrona do Celery.",
+        parameters=[
+            OpenApiParameter(
+                name="task_id",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="ID da task do Celery para verificar",
+            )
+        ],
+        responses={200: "Status da task recuperado com sucesso"},
+        tags=["Tasks"],
+    )
+)
 class TaskStatusViewSet(viewsets.ViewSet):
-    """ViewSet para verificar status de tasks do Celery"""
+    """
+    ViewSet para verificação de status de tasks do Celery.
+
+    Permite monitorar o progresso de operações assíncronas
+    como geração de tópicos, criação de posts e melhorias
+    de conteúdo que são executadas em background.
+
+    Estados possíveis das tasks:
+    - PENDING: aguardando execução
+    - STARTED: em execução
+    - SUCCESS: concluída com sucesso
+    - FAILURE: falhou na execução
+    - RETRY: tentando novamente
+    """
 
     permission_classes = [AllowAny]
 

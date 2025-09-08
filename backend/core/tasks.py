@@ -200,34 +200,52 @@ def improve_post_content_task(self, post_id, user_id=None):
         )
 
         if improvement_data.get("improved_content"):
-            # Atualizar o conteúdo do post
-            post.content = improvement_data["improved_content"]
-            post.updated_at = timezone.now()
-            post.processing_status = "completed"
+            # Verificar se o conteúdo foi realmente melhorado (não é igual ao original)
+            if improvement_data["improved_content"] != post.content:
+                # Atualizar o conteúdo do post
+                post.content = improvement_data["improved_content"]
+                post.updated_at = timezone.now()
+                post.processing_status = "completed"
 
-            # Atualizar informações de geração
-            if post.generation_prompt:
-                post.generation_prompt += (
-                    f" | Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+                # Atualizar informações de geração
+                if post.generation_prompt:
+                    post.generation_prompt += (
+                        f" | Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+                    )
+                else:
+                    post.generation_prompt = (
+                        f"Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+                    )
+
+                post.save()
+
+                improvement_summary = improvement_data.get(
+                    "improvement_summary", "Conteúdo melhorado com sucesso!"
                 )
+                logger.info(f"Post melhorado com sucesso: {post.title}")
+
+                return {
+                    "status": "success",
+                    "message": f"Post melhorado! {improvement_summary}",
+                    "post_id": post.id,
+                    "improvement_summary": improvement_summary,
+                }
             else:
-                post.generation_prompt = (
-                    f"Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
+                # Conteúdo não foi alterado, mas há um resumo de melhoria (provavelmente um erro)
+                post.processing_status = "failed"
+                post.save()
+
+                error_message = improvement_data.get(
+                    "improvement_summary", "O conteúdo não pôde ser melhorado."
                 )
 
-            post.save()
+                logger.warning(f"Falha ao melhorar post {post.title}: {error_message}")
 
-            improvement_summary = improvement_data.get(
-                "improvement_summary", "Conteúdo melhorado com sucesso!"
-            )
-            logger.info(f"Post melhorado com sucesso: {post.title}")
-
-            return {
-                "status": "success",
-                "message": f"Post melhorado! {improvement_summary}",
-                "post_id": post.id,
-                "improvement_summary": improvement_summary,
-            }
+                return {
+                    "status": "error",
+                    "message": error_message,
+                    "post_id": post.id,
+                }
         else:
             post.processing_status = "failed"
             post.save()
