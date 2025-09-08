@@ -1,0 +1,1202 @@
+openapi: 3.0.3
+info:
+  title: Post Pilot API
+  version: 1.0.0
+  description: "\n    API completa para o sistema Post Pilot - Gerador de conteúdo\
+    \ com IA.\n    \n    ## Funcionalidades principais:\n    \n    * **Temas**: Gerencie\
+    \ temas para criação de conteúdo\n    * **Posts**: Crie e gerencie posts e artigos\
+    \  \n    * **Dashboard**: Visualize estatísticas e resumos\n    * **Tasks**: Monitore\
+    \ processamento assíncrono\n    \n    ## Recursos de IA:\n    \n    * Geração\
+    \ de tópicos para temas\n    * Criação automática de posts\n    * Melhoria de\
+    \ conteúdo existente\n    * Geração de prompts para imagens de capa\n    \n  \
+    \  ## Monitoramento:\n    \n    * Status de processamento em tempo real\n    *\
+    \ Verificação de tasks do Celery\n    * Estatísticas do dashboard\n    "
+paths:
+  /api/dashboard/stats/:
+    get:
+      operationId: dashboard_stats_retrieve
+      description: Retorna estatísticas gerais do sistema incluindo contadores de
+        temas, posts, e listagem dos itens mais recentes.
+      summary: Estatísticas do Dashboard
+      tags:
+      - Dashboard
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+  /api/themes/:
+    post:
+      operationId: themes_create
+      description: Cria um novo tema para geração de conteúdo.
+      summary: Criar Tema
+      tags:
+      - Temas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ThemeCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ThemeCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeCreate'
+          description: ''
+    get:
+      operationId: themes_list
+      description: Retorna lista paginada de todos os temas ativos ordenados por data
+        de criação.
+      summary: Listar Temas
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Temas
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedThemeList'
+          description: ''
+  /api/themes/{id}/:
+    delete:
+      operationId: themes_destroy
+      description: Remove um tema do sistema (soft delete).
+      summary: Deletar Tema
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Theme.
+        required: true
+      tags:
+      - Temas
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+    get:
+      operationId: themes_retrieve
+      description: Retorna detalhes completos de um tema específico.
+      summary: Detalhar Tema
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Theme.
+        required: true
+      tags:
+      - Temas
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Theme'
+          description: ''
+    put:
+      operationId: themes_update
+      description: Atualiza todas as informações de um tema.
+      summary: Atualizar Tema
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Theme.
+        required: true
+      tags:
+      - Temas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ThemeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ThemeRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Theme'
+          description: ''
+    patch:
+      operationId: themes_partial_update
+      description: Atualiza parcialmente as informações de um tema.
+      summary: Atualizar Tema Parcialmente
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Theme.
+        required: true
+      tags:
+      - Temas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeRequest'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Theme'
+          description: ''
+  /api/themes/{id}/generate_post/:
+    post:
+      operationId: themes_generate_post_create
+      description: Inicia processo de geração de post usando IA baseado em um tópico
+        específico.
+      summary: Gerar Post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Theme.
+        required: true
+      tags:
+      - Temas
+      - IA
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeneratePostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GeneratePostRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GeneratePostRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+  /api/themes/{id}/generate_topics/:
+    post:
+      operationId: themes_generate_topics_create
+      description: Inicia processo de geração de tópicos usando IA para o tema especificado.
+      summary: Gerar Tópicos
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Theme.
+        required: true
+      tags:
+      - Temas
+      - IA
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ThemeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ThemeRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+  /api/themes/{id}/posts/:
+    get:
+      operationId: themes_posts_list
+      description: Lista todos os posts pertencentes a um tema específico.
+      summary: Posts do Tema
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Theme.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Temas
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPostList'
+          description: ''
+  /api/themes/{id}/status/:
+    get:
+      operationId: themes_status_retrieve
+      description: Verifica o status de processamento atual do tema.
+      summary: Status do Tema
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Theme.
+        required: true
+      tags:
+      - Temas
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+  /api/posts/:
+    post:
+      operationId: posts_create
+      description: Cria um novo post manualmente.
+      summary: Criar Post
+      tags:
+      - Posts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCreate'
+          description: ''
+    get:
+      operationId: posts_list
+      description: Retorna lista paginada de todos os posts ordenados por data de
+        criação.
+      summary: Listar Posts
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Posts
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPostList'
+          description: ''
+  /api/posts/{id}/:
+    delete:
+      operationId: posts_destroy
+      description: Remove um post do sistema.
+      summary: Deletar Post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Post.
+        required: true
+      tags:
+      - Posts
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+    get:
+      operationId: posts_retrieve
+      description: Retorna detalhes completos de um post específico.
+      summary: Detalhar Post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Post.
+        required: true
+      tags:
+      - Posts
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+          description: ''
+    put:
+      operationId: posts_update
+      description: Atualiza todas as informações de um post.
+      summary: Atualizar Post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Post.
+        required: true
+      tags:
+      - Posts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostUpdateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostUpdate'
+          description: ''
+    patch:
+      operationId: posts_partial_update
+      description: Atualiza parcialmente as informações de um post.
+      summary: Atualizar Post Parcialmente
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Post.
+        required: true
+      tags:
+      - Posts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPostUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPostUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPostUpdateRequest'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostUpdate'
+          description: ''
+  /api/posts/{id}/improve/:
+    post:
+      operationId: posts_improve_create
+      description: Inicia processo de melhoria do conteúdo do post usando IA.
+      summary: Melhorar Post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Post.
+        required: true
+      tags:
+      - Posts
+      - IA
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+  /api/posts/{id}/publish/:
+    post:
+      operationId: posts_publish_create
+      description: Marca o post como publicado e define a data de publicação.
+      summary: Publicar Post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Post.
+        required: true
+      tags:
+      - Posts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+  /api/posts/{id}/regenerate_image_prompt/:
+    post:
+      operationId: posts_regenerate_image_prompt_create
+      description: Gera ou regenera o prompt para imagem de capa do artigo.
+      summary: Regenerar Prompt de Imagem
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Post.
+        required: true
+      tags:
+      - Posts
+      - IA
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+  /api/posts/{id}/status/:
+    get:
+      operationId: posts_status_retrieve
+      description: Verifica o status de processamento atual do post.
+      summary: Status do Post
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Post.
+        required: true
+      tags:
+      - Posts
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+  /api/tasks/check/:
+    get:
+      operationId: tasks_check_retrieve
+      description: Verifica o status de processamento de uma task assíncrona do Celery.
+      summary: Verificar Status de Task
+      parameters:
+      - in: query
+        name: task_id
+        schema:
+          type: string
+        description: ID da task do Celery para verificar
+        required: true
+      tags:
+      - Tasks
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+components:
+  schemas:
+    GeneratePostPostTypeEnum:
+      enum:
+      - simple
+      - article
+      type: string
+      description: |-
+        * `simple` - simple
+        * `article` - article
+    GeneratePostRequest:
+      type: object
+      properties:
+        theme_id:
+          type: integer
+        topic:
+          type: string
+          minLength: 1
+        post_type:
+          allOf:
+          - $ref: '#/components/schemas/GeneratePostPostTypeEnum'
+          default: simple
+        topic_data: {}
+      required:
+      - theme_id
+      - topic
+    PaginatedPostList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+    PaginatedThemeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Theme'
+    PatchedPostUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        content:
+          type: string
+          minLength: 1
+        promotional_post:
+          type: string
+          description: Summarized post to promote articles on LinkedIn
+        seo_title:
+          type: string
+          minLength: 1
+          description: SEO optimized title (max. 60 characters)
+          maxLength: 60
+        seo_description:
+          type: string
+          minLength: 1
+          description: SEO optimized description (max. 160 characters)
+          maxLength: 160
+        link:
+          type: string
+          format: uri
+          nullable: true
+          description: Post related link (optional)
+          maxLength: 200
+        scheduled_date:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+    PatchedThemeRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          title: Theme Title
+          maxLength: 200
+        is_active:
+          type: boolean
+          title: Active
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        theme:
+          type: integer
+        theme_title:
+          type: string
+          readOnly: true
+        post_type:
+          $ref: '#/components/schemas/PostType540Enum'
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+        promotional_post:
+          type: string
+          description: Summarized post to promote articles on LinkedIn
+        cover_image_prompt:
+          type: string
+          description: Detailed description for article cover image generation
+        topic:
+          type: string
+          description: Specific topic used to generate this post
+          maxLength: 200
+        seo_title:
+          type: string
+          description: SEO optimized title (max. 60 characters)
+          maxLength: 60
+        seo_description:
+          type: string
+          description: SEO optimized description (max. 160 characters)
+          maxLength: 160
+        link:
+          type: string
+          format: uri
+          nullable: true
+          description: Post related link (optional)
+          maxLength: 200
+        post_date:
+          type: string
+          format: date-time
+        scheduled_date:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        processing_status:
+          allOf:
+          - $ref: '#/components/schemas/ProcessingStatusEnum'
+          readOnly: true
+        is_processing:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        generated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Date and time when content was generated by AI
+        generation_prompt:
+          type: string
+          readOnly: true
+          description: Prompt used to generate content
+        ai_model_used:
+          type: string
+          readOnly: true
+        content_preview:
+          type: string
+          readOnly: true
+      required:
+      - ai_model_used
+      - content
+      - content_preview
+      - created_at
+      - generated_at
+      - generation_prompt
+      - id
+      - is_processing
+      - post_type
+      - processing_status
+      - seo_description
+      - seo_title
+      - theme
+      - theme_title
+      - title
+      - topic
+      - updated_at
+    PostCreate:
+      type: object
+      properties:
+        theme:
+          type: integer
+        topic:
+          type: string
+          description: Specific topic used to generate this post
+          maxLength: 200
+        post_type:
+          $ref: '#/components/schemas/PostType540Enum'
+      required:
+      - post_type
+      - theme
+      - topic
+    PostCreateRequest:
+      type: object
+      properties:
+        theme:
+          type: integer
+        topic:
+          type: string
+          minLength: 1
+          description: Specific topic used to generate this post
+          maxLength: 200
+        post_type:
+          $ref: '#/components/schemas/PostType540Enum'
+      required:
+      - post_type
+      - theme
+      - topic
+    PostRequest:
+      type: object
+      properties:
+        theme:
+          type: integer
+        post_type:
+          $ref: '#/components/schemas/PostType540Enum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        content:
+          type: string
+          minLength: 1
+        promotional_post:
+          type: string
+          description: Summarized post to promote articles on LinkedIn
+        cover_image_prompt:
+          type: string
+          description: Detailed description for article cover image generation
+        topic:
+          type: string
+          minLength: 1
+          description: Specific topic used to generate this post
+          maxLength: 200
+        seo_title:
+          type: string
+          minLength: 1
+          description: SEO optimized title (max. 60 characters)
+          maxLength: 60
+        seo_description:
+          type: string
+          minLength: 1
+          description: SEO optimized description (max. 160 characters)
+          maxLength: 160
+        link:
+          type: string
+          format: uri
+          nullable: true
+          description: Post related link (optional)
+          maxLength: 200
+        post_date:
+          type: string
+          format: date-time
+        scheduled_date:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+      required:
+      - content
+      - post_type
+      - seo_description
+      - seo_title
+      - theme
+      - title
+      - topic
+    PostType540Enum:
+      enum:
+      - simple
+      - article
+      type: string
+      description: |-
+        * `simple` - Simple Post
+        * `article` - Article
+    PostUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+        promotional_post:
+          type: string
+          description: Summarized post to promote articles on LinkedIn
+        seo_title:
+          type: string
+          description: SEO optimized title (max. 60 characters)
+          maxLength: 60
+        seo_description:
+          type: string
+          description: SEO optimized description (max. 160 characters)
+          maxLength: 160
+        link:
+          type: string
+          format: uri
+          nullable: true
+          description: Post related link (optional)
+          maxLength: 200
+        scheduled_date:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+      required:
+      - content
+      - seo_description
+      - seo_title
+      - title
+    PostUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        content:
+          type: string
+          minLength: 1
+        promotional_post:
+          type: string
+          description: Summarized post to promote articles on LinkedIn
+        seo_title:
+          type: string
+          minLength: 1
+          description: SEO optimized title (max. 60 characters)
+          maxLength: 60
+        seo_description:
+          type: string
+          minLength: 1
+          description: SEO optimized description (max. 160 characters)
+          maxLength: 160
+        link:
+          type: string
+          format: uri
+          nullable: true
+          description: Post related link (optional)
+          maxLength: 200
+        scheduled_date:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+      required:
+      - content
+      - seo_description
+      - seo_title
+      - title
+    ProcessingStatusEnum:
+      enum:
+      - idle
+      - processing
+      - completed
+      - failed
+      type: string
+      description: |-
+        * `idle` - Waiting
+        * `processing` - Processing
+        * `completed` - Completed
+        * `failed` - Failed
+    StatusEnum:
+      enum:
+      - draft
+      - generated
+      - published
+      - scheduled
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `generated` - Generated
+        * `published` - Published
+        * `scheduled` - Scheduled
+    Theme:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          title: Theme Title
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_active:
+          type: boolean
+          title: Active
+        processing_status:
+          allOf:
+          - $ref: '#/components/schemas/ProcessingStatusEnum'
+          readOnly: true
+        is_processing:
+          type: boolean
+          readOnly: true
+        suggested_topics:
+          readOnly: true
+          nullable: true
+          description: Topics suggested by the first OpenAI agent
+        topics_generated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        posts_count:
+          type: string
+          readOnly: true
+        articles_count:
+          type: string
+          readOnly: true
+        simple_posts_count:
+          type: string
+          readOnly: true
+      required:
+      - articles_count
+      - created_at
+      - id
+      - is_processing
+      - posts_count
+      - processing_status
+      - simple_posts_count
+      - suggested_topics
+      - title
+      - topics_generated_at
+      - updated_at
+    ThemeCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          title: Theme Title
+          maxLength: 200
+      required:
+      - title
+    ThemeCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          title: Theme Title
+          maxLength: 200
+      required:
+      - title
+    ThemeRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          title: Theme Title
+          maxLength: 200
+        is_active:
+          type: boolean
+          title: Active
+      required:
+      - title
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

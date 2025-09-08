@@ -1,23 +1,26 @@
 # Post Pilot - Multi-AI LinkedIn Content Generator
 
-A comprehensive Django application for generating LinkedIn posts and articles using multiple AI providers. Choose between OpenAI, Grok (X.AI), and Google Gemini for content generation with asynchronous processing via Celery.
+A modern full-stack application for generating LinkedIn posts and articles using multiple AI providers. Built with React TypeScript frontend and Django REST Framework backend, featuring OpenAI, Grok (X.AI), and Google Gemini integration with asynchronous processing.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![Django](https://img.shields.io/badge/Django-5.2.5-green)
+![React](https://img.shields.io/badge/React-19.1.1-61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-4.9.5-blue)
 ![AI Providers](https://img.shields.io/badge/AI-OpenAI%20|%20Grok%20|%20Gemini-orange)
 ![Celery](https://img.shields.io/badge/Celery-Async-red)
 
 ## 🚀 Features
 
+- **Modern Full-Stack Architecture**: React TypeScript frontend + Django REST Framework backend
 - **Multi-AI Provider Support**: OpenAI, Grok (X.AI), and Google Gemini
 - **Topic Generation**: AI generates 3-5 structured topics for each theme
 - **Content Creation**: Generate simple posts (up to 1300 characters) or long-form articles
 - **Content Improvement**: Enhance existing posts with practical examples and secure code
-- **Asynchronous Processing**: Uses Celery + Redis for non-blocking API calls
-- **Complete Web Interface**: Dashboard to manage themes, posts, and view statistics
-- **Markdown Rendering**: Full Markdown support in generated posts
-- **Real-time Monitoring**: Flower interface to track tasks in real-time
-- **Flexible Provider Switching**: Dynamic AI provider configuration
+- **Real-time Updates**: Asynchronous processing with live status updates
+- **RESTful API**: Complete REST API with Django REST Framework
+- **Responsive UI**: Modern React interface with Bootstrap components
+- **Type Safety**: Full TypeScript implementation for better developer experience
+- **Monitoring**: Flower interface to track background tasks
 
 ## 🤖 Supported AI Providers
 
@@ -29,19 +32,30 @@ A comprehensive Django application for generating LinkedIn posts and articles us
 
 ## 🛠 Technology Stack
 
-- **Backend**: Django 5.2.5
-- **AI APIs**: OpenAI, Grok (X.AI), Google Gemini
-- **Queue System**: Celery + Redis
-- **Database**: SQLite (development) / PostgreSQL (production)
-- **Frontend**: Bootstrap 5.1.3
-- **Monitoring**: Flower
-- **Content**: Python-Markdown
-- **Language**: 100% English interface
+### Frontend
+
+- **React 19.1.1** - Modern UI library
+- **TypeScript 4.9.5** - Type safety and better DX
+- **React Router DOM 7.8.2** - Client-side routing
+- **Bootstrap 5.3.8** + **React Bootstrap 2.10.10** - UI components
+- **Axios 1.11.0** - HTTP client for API communication
+- **React Markdown 10.1.0** - Markdown rendering
+
+### Backend
+
+- **Django 5.2.5** - Web framework
+- **Django REST Framework 3.15.2** - REST API toolkit
+- **django-cors-headers 4.7.0** - CORS handling
+- **Celery 5.5.3** + **Redis** - Asynchronous task processing
+- **SQLite** (development) / **PostgreSQL** (production)
+- **Flower 2.0.1** - Celery monitoring
+- **Multiple AI SDKs** - OpenAI, Grok, Gemini integration
 
 ## 📋 Prerequisites
 
-- Python 3.11+
-- Redis Server
+- **Python 3.11+**
+- **Node.js 16+** and **npm**
+- **Redis Server**
 - At least one AI provider API key (OpenAI, Grok, or Gemini)
 
 ## 🔧 Installation & Setup
@@ -49,33 +63,42 @@ A comprehensive Django application for generating LinkedIn posts and articles us
 ### 1. Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/rrafaelpinto/post-pilot
 cd post-pilot
 ```
 
-### 2. Virtual Environment Setup
+### 2. Backend Setup (Django REST Framework)
 
 ```bash
+cd backend
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 # or
 .venv\Scripts\activate     # Windows
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
 ```
 
-### 3. Install Dependencies
+### 3. Frontend Setup (React TypeScript)
 
 ```bash
-pip install django python-dotenv openai markdown
-pip install celery redis django-celery-beat flower google-generativeai
+cd ../frontend
+npm install
 ```
 
 ### 4. Environment Configuration
 
+Create environment files for both backend and frontend:
+
+#### Backend (.env)
+
 ```bash
+cd backend
 cp .env.example .env
 ```
 
-Edit the `.env` file with your configuration:
+Edit `backend/.env`:
 
 ```env
 # AI Providers Configuration
@@ -99,7 +122,19 @@ DEBUG=True
 SECRET_KEY=your_secret_key_here
 ```
 
-### 5. Redis Installation & Configuration
+#### Frontend (.env)
+
+```bash
+cd frontend
+```
+
+Create `frontend/.env`:
+
+```env
+REACT_APP_API_BASE_URL=http://localhost:8000
+```
+
+### 5. Redis Installation
 
 #### Ubuntu/Debian
 
@@ -119,86 +154,175 @@ brew services start redis
 
 #### Windows
 
-Download and install Redis from the [official repository](https://github.com/microsoftarchive/redis/releases)
+Download Redis from [official repository](https://github.com/microsoftarchive/redis/releases)
 
 ### 6. Database Setup
 
 ```bash
+cd backend
 python manage.py makemigrations
 python manage.py migrate
 python manage.py createsuperuser
 ```
 
-## 🚀 Running the System
+## 🚀 Running the Application
 
-### Recommended Method: Multiple Terminals
-
-#### Terminal 1 - Django Server
+### Quick Start with Scripts
 
 ```bash
+# Terminal 1 - Backend Django REST API
+./start_backend.sh         # http://localhost:8000
+
+# Terminal 2 - Frontend React App  
+./start_frontend.sh         # http://localhost:3000
+
+# Terminal 3 - Celery Worker (for AI tasks)
+./start_celery.sh          # Background processing
+```
+
+### Manual Start
+
+#### Backend Django REST API
+
+```bash
+cd backend
+source .venv/bin/activate
 python manage.py runserver
 ```
 
-#### Terminal 2 - Celery Worker
+#### Frontend React Application
 
 ```bash
-./scripts/start_worker.sh
-# or manually:
-celery -A post_pilot worker --loglevel=info --concurrency=2 --queues=default,ai_tasks
+cd frontend
+npm start
 ```
 
-#### Terminal 3 - Celery Beat (Scheduler)
+#### Celery Worker (Optional for AI tasks)
 
 ```bash
-./scripts/start_beat.sh
-# or manually:
-celery -A post_pilot beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+cd backend
+source .venv/bin/activate
+celery -A post_pilot worker --loglevel=info
 ```
 
-#### Terminal 4 - Flower (Monitoring)
+#### Celery Beat Scheduler (Optional)
 
 ```bash
-./scripts/start_flower.sh
-# or manually:
-celery -A post_pilot flower --port=5555
+cd backend
+source .venv/bin/activate
+celery -A post_pilot beat --loglevel=info
 ```
 
-### Access Points
+#### Flower Monitoring (Optional)
 
-- **Web Application**: <http://localhost:8000>
-- **Django Admin**: <http://localhost:8000/admin>
+```bash
+cd backend
+source .venv/bin/activate
+celery -A post_pilot flower
+```
+
+## 🌐 Application URLs
+
+- **React Frontend**: <http://localhost:3000>
+- **Django API**: <http://localhost:8000/api/>
+- **Django Admin**: <http://localhost:8000/admin/>
+- **API Browser**: <http://localhost:8000/api/> (DRF Browsable API)
 - **Flower Monitoring**: <http://localhost:5555>
+
+## 📁 Project Structure
+
+```
+post-pilot/
+├── 📁 backend/              # Django REST Framework API
+│   ├── 📁 core/            # Main Django app
+│   │   ├── models.py       # Theme and Post models
+│   │   ├── serializers.py  # DRF serializers
+│   │   ├── api_views.py    # API ViewSets
+│   │   ├── api_urls.py     # API URL patterns
+│   │   ├── services.py     # AI service implementations
+│   │   ├── tasks.py        # Celery tasks
+│   │   └── admin.py        # Django admin
+│   ├── 📁 post_pilot/      # Django project settings
+│   │   ├── settings.py     # Main settings
+│   │   ├── urls.py         # Main URL configuration
+│   │   └── celery.py       # Celery configuration
+│   ├── 📁 scripts/         # Automation scripts
+│   ├── manage.py           # Django CLI
+│   └── requirements.txt    # Python dependencies
+│
+├── 📁 frontend/             # React TypeScript Application
+│   ├── 📁 src/
+│   │   ├── 📁 components/  # React components
+│   │   ├── 📁 pages/       # Page components
+│   │   ├── 📁 hooks/       # Custom React hooks
+│   │   ├── 📁 services/    # API client services
+│   │   ├── 📁 types/       # TypeScript type definitions
+│   │   └── App.tsx         # Main App component
+│   ├── package.json        # Node.js dependencies
+│   └── tsconfig.json       # TypeScript configuration
+│
+├── start_backend.sh         # Backend startup script
+├── start_frontend.sh        # Frontend startup script
+├── start_celery.sh         # Celery startup script
+└── README.md               # Project documentation
+```
+
+## 🔌 API Endpoints
+
+### Dashboard
+
+- `GET /api/dashboard/stats/` - Dashboard statistics
+
+### Themes
+
+- `GET /api/themes/` - List themes
+- `POST /api/themes/` - Create theme
+- `GET /api/themes/{id}/` - Theme details
+- `POST /api/themes/{id}/generate_topics/` - Generate topics
+- `POST /api/themes/{id}/generate_post/` - Generate post
+- `GET /api/themes/{id}/posts/` - Theme posts
+- `GET /api/themes/{id}/status/` - Processing status
+
+### Posts
+
+- `GET /api/posts/` - List posts
+- `GET /api/posts/{id}/` - Post details
+- `PATCH /api/posts/{id}/` - Update post
+- `POST /api/posts/{id}/improve/` - Improve post content
+- `POST /api/posts/{id}/regenerate_image_prompt/` - Regenerate image prompt
+- `POST /api/posts/{id}/publish/` - Publish post
+- `GET /api/posts/{id}/status/` - Processing status
+
+### Tasks
+
+- `GET /api/tasks/check/?task_id={id}` - Check Celery task status
 
 ## 🤖 AI Provider Management
 
-### Management Commands
+### Switching AI Providers
 
-#### List available providers
-
-```bash
-python manage.py ai_provider --list
-```
-
-#### View current provider
+You can switch between AI providers using Django management commands:
 
 ```bash
-python manage.py ai_provider --current
-```
-
-#### Switch provider
-
-```bash
+cd backend
 python manage.py ai_provider --set openai   # For OpenAI
 python manage.py ai_provider --set grok     # For Grok (X.AI)
 python manage.py ai_provider --set gemini   # For Google Gemini
 ```
 
-#### Test connection
+### Testing AI Providers
 
 ```bash
+# Test specific provider
 python manage.py ai_provider --test openai
 python manage.py ai_provider --test grok
 python manage.py ai_provider --test gemini
+
+# List available providers
+python manage.py ai_provider --list
+
+# View current provider
+python manage.py ai_provider --current
 ```
 
 ### How to Obtain API Keys
@@ -206,8 +330,8 @@ python manage.py ai_provider --test gemini
 #### OpenAI
 
 1. Visit [platform.openai.com](https://platform.openai.com/)
-2. Create an account and add payment method
-3. Go to "API Keys" and create a new key
+2. Create account and add payment method
+3. Generate API key in "API Keys" section
 4. Add credits to your account
 
 #### Grok (X.AI)
@@ -219,47 +343,38 @@ python manage.py ai_provider --test gemini
 #### Google Gemini
 
 1. Visit [ai.google.dev](https://ai.google.dev/)
-2. Create a project in Google AI Studio
-3. Generate an API key
+2. Create project in Google AI Studio
+3. Generate API key
 4. Free tier available with limitations
-
-### Configuration Testing
-
-Run the included test script:
-
-```bash
-python test_multi_ai.py
-```
-
-This will:
-
-- Verify all configured providers
-- Test API connections
-- Validate topic generation
-- Show configuration status
 
 ## 📖 Usage Guide
 
-### 1. Create a Theme
+### 1. Access the Application
 
-1. Access the dashboard
+1. Start the backend: `./start_backend.sh`
+2. Start the frontend: `./start_frontend.sh`
+3. Open <http://localhost:3000> in your browser
+
+### 2. Create a Theme
+
+1. Navigate to the dashboard
 2. Click "Create New Theme"
 3. Enter theme title (e.g., "React Hooks", "Python FastAPI", "Docker")
 
-### 2. Generate Topics
+### 3. Generate Topics
 
 1. On the theme page, click "Generate Topics"
 2. AI will create 3-5 structured topics with hooks, summaries, and CTAs
-3. Processing is asynchronous - track via Flower
+3. Processing is asynchronous - status updates in real-time
 
-### 3. Create Posts
+### 4. Create Posts
 
 1. For each topic, choose:
    - **Simple Post**: Up to 1300 characters, optimized for LinkedIn
    - **Article**: 1000-1500 words + promotional post
 2. Content is generated in Markdown format
 
-### 4. Improve Posts
+### 5. Improve Posts
 
 1. On the post page, click "Improve Post"
 2. AI will expand content with:
@@ -268,257 +383,225 @@ This will:
    - Security considerations
    - Best practices
 
-## 🔄 Asynchronous Architecture
+## 🔄 Architecture Overview
 
-### Processing Flow
+### Frontend Architecture
 
-1. **Web Interface** → Triggers Celery task
-2. **Redis** → Stores task in queue
-3. **Celery Worker** → Processes AI API call
-4. **Result** → Updates database
-5. **Interface** → Shows result or status
-
-### Configured Queues
-
-- `default`: General tasks
-- `ai_tasks`: Specific AI calls (isolated)
-
-### Retry Strategy
-
-- **Maximum**: 3 attempts
-- **Delay**: Progressive (60s, 120s, 180s)
-- **Timeout**: 10 minutes per task
-
-## 📊 Monitoring with Flower
-
-Access <http://localhost:5555> to:
-
-- View running tasks
-- Monitor queues and workers
-- See execution history
-- Monitor performance
-
-## 🔧 Advanced Configuration
-
-### AI Models Used by Provider
-
-#### OpenAI
-
-- **Topics**: GPT-4o-mini (economical and fast)
-- **Simple Posts**: GPT-4o-mini
-- **Articles**: GPT-4o (higher quality)
-- **Improvements**: GPT-4o (better analysis)
-
-#### Grok
-
-- **All operations**: grok-beta
-
-#### Gemini
-
-- **All operations**: gemini-1.5-pro
-
-### Performance Settings
-
-```python
-# settings.py
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_TASK_SOFT_TIME_LIMIT = 300  # 5 minutes
-CELERY_TASK_TIME_LIMIT = 600       # 10 minutes
+```
+React App (TypeScript)
+├── Components (React Bootstrap)
+├── Pages (Route Components)
+├── Hooks (Custom React Hooks)
+├── Services (API Client)
+└── Types (TypeScript Definitions)
 ```
 
-## 🐛 Troubleshooting
+### Backend Architecture
 
-### Redis Connection Issues
-
-```bash
-# Check if Redis is running
-redis-cli ping  # Should return "PONG"
-
-# Check port
-sudo netstat -tlnp | grep :6379
+```
+Django REST Framework
+├── Models (Database Layer)
+├── Serializers (Data Validation)
+├── ViewSets (API Endpoints)
+├── Services (AI Integrations)
+└── Tasks (Celery Background Jobs)
 ```
 
-### Celery Worker Won't Start
+### Communication Flow
 
-```bash
-# Check logs
-celery -A post_pilot worker --loglevel=debug
-
-# Verify settings
-python manage.py shell
->>> from django.conf import settings
->>> print(settings.CELERY_BROKER_URL)
+```
+React Frontend → Axios → Django REST API → Celery Tasks → AI Providers
+     ↑                                           ↓
+     └─── Real-time Polling ←─── Task Status ←──┘
 ```
 
-### AI API Timeout
+## 🔧 Development Features
 
-```bash
-# Verify API Key
-python manage.py shell
->>> import os
->>> print(os.getenv('OPENAI_API_KEY'))
-```
+### Real-time Updates
 
-### Provider Switching Issues
+- **Task Polling**: Custom React hooks monitor background tasks
+- **Live Status**: Real-time updates for AI generation progress
+- **Auto-refresh**: Automatic UI updates when tasks complete
 
-```bash
-# Restart Celery workers after changing provider
-celery -A post_pilot worker --reload
-```
+### Type Safety
 
-## 📝 Data Structure
+- **Full TypeScript**: Complete type coverage in frontend
+- **API Types**: Strongly typed API responses
+- **DRF Serializers**: Backend validation and type checking
 
-### Theme Model
+### Error Handling
 
-- `title`: Theme title
-- `suggested_topics`: AI-generated topics (JSON)
-- `processing_status`: Async processing status
-- `is_active`: Active status
-
-### Post Model
-
-- `post_type`: 'simple' or 'article'
-- `content`: Content in Markdown
-- `promotional_post`: Promotional post (articles only)
-- `processing_status`: Async processing status
-- `ai_model_used`: AI model used for generation
+- **React Error Boundaries**: Graceful error handling
+- **API Error Responses**: Structured error messages
+- **Retry Logic**: Automatic retry for failed AI requests
 
 ## 🚀 Production Deployment
 
-### Recommended Settings
+### Frontend Deployment
 
 ```bash
-# PostgreSQL
-pip install psycopg2-binary
+cd frontend
+npm run build
+# Deploy build/ directory to static hosting (Netlify, Vercel, etc.)
+```
 
-# Gunicorn
-pip install gunicorn
+### Backend Deployment
 
-# Supervisor for process management
-sudo apt install supervisor
+```bash
+# Use production settings
+export DJANGO_SETTINGS_MODULE=post_pilot.settings.production
+
+# Install production dependencies
+pip install gunicorn psycopg2-binary
+
+# Collect static files
+python manage.py collectstatic
+
+# Run with Gunicorn
+gunicorn post_pilot.wsgi:application --bind 0.0.0.0:8000
 ```
 
 ### Environment Variables for Production
 
 ```env
+# Backend
 DEBUG=False
 ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
 DATABASE_URL=postgresql://user:password@localhost:5432/postpilot
-CELERY_BROKER_URL=redis://localhost:6379/0
+CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+
+# Frontend
+REACT_APP_API_BASE_URL=https://api.yourdomain.com
 ```
 
-### Docker Compose Example
+## 🐛 Troubleshooting
 
-```yaml
-version: '3.8'
-services:
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-  
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_DB: postpilot
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-  
-  web:
-    build: .
-    command: gunicorn post_pilot.wsgi:application --bind 0.0.0.0:8000
-    depends_on:
-      - db
-      - redis
-  
-  worker:
-    build: .
-    command: celery -A post_pilot worker --loglevel=info
-    depends_on:
-      - db
-      - redis
+### Common Issues
+
+#### Frontend not connecting to backend
+
+```bash
+# Check REACT_APP_API_BASE_URL in frontend/.env
+echo $REACT_APP_API_BASE_URL
+
+# Verify CORS settings in backend
+python manage.py shell
+>>> from django.conf import settings
+>>> print(settings.CORS_ALLOWED_ORIGINS)
 ```
 
-## 🔒 Security Considerations
+#### Redis connection issues
 
-- Keep API keys secure in environment variables
+```bash
+# Test Redis connection
+redis-cli ping  # Should return "PONG"
+
+# Check if Redis is running
+sudo systemctl status redis-server
+```
+
+#### Celery tasks not running
+
+```bash
+# Check Celery worker status
+celery -A post_pilot inspect active
+
+# Restart Celery worker
+./start_celery.sh
+```
+
+#### TypeScript compilation errors
+
+```bash
+cd frontend
+npm run build  # Check for TypeScript errors
+```
+
+## 📊 Monitoring
+
+### Development Monitoring
+
+- **React DevTools**: Component debugging
+- **Django Debug Toolbar**: SQL query analysis
+- **Flower**: Celery task monitoring at <http://localhost:5555>
+
+### Production Monitoring
+
+- **Application logs**: Configure proper logging
+- **Performance monitoring**: Use tools like Sentry
+- **Database monitoring**: Monitor query performance
+- **Task queue monitoring**: Monitor Celery performance
+
+## 🔒 Security Best Practices
+
+### Development
+
+- Keep API keys in environment variables
 - Use HTTPS in production
-- Implement rate limiting for AI API calls
+- Implement proper CORS settings
+- Regular dependency updates
+
+### Production
+
+- Use secure secret keys
+- Implement rate limiting
 - Monitor API usage and costs
-- Regular security updates for dependencies
+- Regular security audits
 
-## 💰 Cost Optimization
+## 📚 API Documentation
 
-### OpenAI
+The API is fully documented using Django REST Framework's browsable API. Visit <http://localhost:8000/api/> to explore all available endpoints with interactive documentation.
 
-- Use GPT-4o-mini for cost-effective operations
-- Implement caching for repeated requests
-- Monitor token usage
+### Key Features
 
-### Grok
+- **Interactive API Browser**: Test endpoints directly
+- **Request/Response Examples**: See expected data formats
+- **Authentication Info**: API key requirements
+- **Schema Documentation**: Complete API schema
 
-- Pricing to be announced (currently in beta)
+## 🤝 Contributing
 
-### Gemini
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
-- Utilize free tier limits effectively
-- Monitor rate limits
+### Development Setup for Contributors
+
+```bash
+# Backend setup
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+
+# Frontend setup
+cd ../frontend
+npm install
+npm start
+
+# Run tests
+cd ../backend
+python manage.py test
+cd ../frontend
+npm test
+```
 
 ## 📄 License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
 
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the project
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
-
 ## 🆘 Support
 
-For questions and support:
-
-- Open an issue on GitHub
-- Check Django documentation
-- Review Celery documentation
-- Consult AI provider documentation
-
-## 🏗 Architecture Overview
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web Interface │────│   Django Views  │────│     Models      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │  Celery Tasks   │
-                       └─────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │ AI Service      │
-                       │ Factory         │
-                       └─────────────────┘
-                                │
-                    ┌───────────┼───────────┐
-                    ▼           ▼           ▼
-            ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-            │   OpenAI    │ │    Grok     │ │   Gemini    │
-            │   Service   │ │   Service   │ │   Service   │
-            └─────────────┘ └─────────────┘ └─────────────┘
-```
-
-## 📈 Version History
-
-- **v2.0.0**: Multi-AI provider support, full English translation
-- **v1.5.0**: Celery integration, asynchronous processing
-- **v1.0.0**: Initial release with OpenAI support
+- **Issues**: Open an issue on GitHub
+- **Documentation**: Check the API documentation at `/api/`
+- **Community**: Join discussions in GitHub Discussions
 
 ---
 
-**Developed with ❤️ for optimizing technical content creation on LinkedIn**
+**Built with ❤️ for modern LinkedIn content creation**
