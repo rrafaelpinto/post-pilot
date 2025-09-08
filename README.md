@@ -4,6 +4,8 @@
 
 Sophisticated LinkedIn content generation platform built with **React TypeScript** and **Django REST Framework**, showcasing enterprise-level patterns including microservices architecture, asynchronous task processing, and multi-provider AI orchestration.
 
+👤 Author: [Rafael Pinto](https://www.linkedin.com/in/rafaelmpinto/)
+
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![Django](https://img.shields.io/badge/Django-5.2.5-green)
 ![React](https://img.shields.io/badge/React-19.1.1-61DAFB)
