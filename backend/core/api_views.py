@@ -30,29 +30,29 @@ from .tasks import (
 
 @extend_schema_view(
     stats=extend_schema(
-        summary="Estatísticas do Dashboard",
-        description="Retorna estatísticas gerais do sistema incluindo contadores de temas, posts, e listagem dos itens mais recentes.",
-        responses={200: "Estatísticas recuperadas com sucesso"},
+        summary="Dashboard Statistics",
+        description="Returns general system statistics including theme and post counters, and listing of most recent items.",
+        responses={200: "Statistics retrieved successfully"},
         tags=["Dashboard"],
     )
 )
 class DashboardViewSet(viewsets.ViewSet):
     """
-    ViewSet para estatísticas do dashboard.
+    ViewSet for dashboard statistics.
 
-    Fornece endpoints para recuperar informações estatísticas
-    sobre o sistema, incluindo:
-    - Contadores de temas e posts
-    - Status dos posts por categoria
-    - Serviço de IA ativo
-    - Listagem dos itens mais recentes
+    Provides endpoints to retrieve statistical information
+    about the system, including:
+    - Theme and post counters
+    - Post status by category
+    - Active AI service
+    - Listing of most recent items
     """
 
     permission_classes = [AllowAny]
 
     @action(detail=False, methods=["get"])
     def stats(self, request):
-        """Retorna estatísticas do dashboard"""
+        """Returns dashboard statistics"""
         total_themes = Theme.objects.filter(is_active=True).count()
         total_posts = Post.objects.count()
         published_posts = Post.objects.filter(status="published").count()
@@ -81,73 +81,73 @@ class DashboardViewSet(viewsets.ViewSet):
 
 @extend_schema_view(
     list=extend_schema(
-        summary="Listar Temas",
-        description="Retorna lista paginada de todos os temas ativos ordenados por data de criação.",
-        tags=["Temas"],
+        summary="List Themes",
+        description="Returns paginated list of all active themes ordered by creation date.",
+        tags=["Themes"],
     ),
     create=extend_schema(
-        summary="Criar Tema",
-        description="Cria um novo tema para geração de conteúdo.",
-        tags=["Temas"],
+        summary="Create Theme",
+        description="Creates a new theme for content generation.",
+        tags=["Themes"],
     ),
     retrieve=extend_schema(
-        summary="Detalhar Tema",
-        description="Retorna detalhes completos de um tema específico.",
-        tags=["Temas"],
+        summary="Theme Details",
+        description="Returns complete details of a specific theme.",
+        tags=["Themes"],
     ),
     update=extend_schema(
-        summary="Atualizar Tema",
-        description="Atualiza todas as informações de um tema.",
-        tags=["Temas"],
+        summary="Update Theme",
+        description="Updates all information of a theme.",
+        tags=["Themes"],
     ),
     partial_update=extend_schema(
-        summary="Atualizar Tema Parcialmente",
-        description="Atualiza parcialmente as informações de um tema.",
-        tags=["Temas"],
+        summary="Partially Update Theme",
+        description="Partially updates theme information.",
+        tags=["Themes"],
     ),
     destroy=extend_schema(
-        summary="Deletar Tema",
-        description="Remove um tema do sistema (soft delete).",
-        tags=["Temas"],
+        summary="Delete Theme",
+        description="Removes a theme from the system (soft delete).",
+        tags=["Themes"],
     ),
     generate_topics=extend_schema(
-        summary="Gerar Tópicos",
-        description="Inicia processo de geração de tópicos usando IA para o tema especificado.",
-        responses={200: "Geração de tópicos iniciada com sucesso"},
-        tags=["Temas", "IA"],
+        summary="Generate Topics",
+        description="Starts AI topic generation process for the specified theme.",
+        responses={200: "Topic generation started successfully"},
+        tags=["Themes", "AI"],
     ),
     generate_post=extend_schema(
-        summary="Gerar Post",
-        description="Inicia processo de geração de post usando IA baseado em um tópico específico.",
+        summary="Generate Post",
+        description="Starts AI post generation process based on a specific topic.",
         request=GeneratePostSerializer,
-        responses={200: "Geração de post iniciada com sucesso"},
-        tags=["Temas", "IA"],
+        responses={200: "Post generation started successfully"},
+        tags=["Themes", "AI"],
     ),
     posts=extend_schema(
-        summary="Posts do Tema",
-        description="Lista todos os posts pertencentes a um tema específico.",
+        summary="Theme Posts",
+        description="Lists all posts belonging to a specific theme.",
         responses={200: PostSerializer(many=True)},
-        tags=["Temas"],
+        tags=["Themes"],
     ),
     status=extend_schema(
-        summary="Status do Tema",
-        description="Verifica o status de processamento atual do tema.",
-        responses={200: "Status recuperado com sucesso"},
-        tags=["Temas"],
+        summary="Theme Status",
+        description="Checks the current processing status of the theme.",
+        responses={200: "Status retrieved successfully"},
+        tags=["Themes"],
     ),
 )
 class ThemeViewSet(viewsets.ModelViewSet):
     """
-    ViewSet para gerenciamento completo de temas.
+    ViewSet for complete theme management.
 
-    Os temas são o núcleo do sistema, representando categorias
-    ou assuntos para os quais o conteúdo será gerado.
+    Themes are the core of the system, representing categories
+    or subjects for which content will be generated.
 
-    Funcionalidades principais:
-    - CRUD completo de temas
-    - Geração automática de tópicos com IA
-    - Geração de posts baseados em tópicos
-    - Monitoramento de status de processamento
+    Main functionalities:
+    - Complete CRUD for themes
+    - Automatic topic generation with AI
+    - Post generation based on topics
+    - Processing status monitoring
     """
 
     permission_classes = [AllowAny]
@@ -162,18 +162,18 @@ class ThemeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def generate_topics(self, request, pk=None):
-        """Gera tópicos para um tema usando AI"""
+        """Generates topics for a theme using AI"""
         theme = get_object_or_404(Theme, pk=pk)
 
-        # Marca como processando
+        # Mark as processing
         theme.is_processing = True
         theme.processing_status = "processing"
         theme.save()
 
-        # Inicia task assíncrona
+        # Start asynchronous task
         task = generate_topics_task.delay(theme.id)
 
-        # Mensagem baseada se já existem tópicos
+        # Message based on whether topics already exist
         existing_count = 0
         if theme.suggested_topics and theme.suggested_topics.get("topics"):
             existing_count = len(theme.suggested_topics["topics"])
@@ -189,7 +189,7 @@ class ThemeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def generate_post(self, request, pk=None):
-        """Gera um post baseado em um tópico específico"""
+        """Generates a post based on a specific topic"""
         theme = get_object_or_404(Theme, pk=pk)
 
         serializer = GeneratePostSerializer(data=request.data)
@@ -201,7 +201,7 @@ class ThemeViewSet(viewsets.ModelViewSet):
         post_type = data.get("post_type", "simple")
         topic_data = data.get("topic_data")
 
-        # Inicia task assíncrona
+        # Start asynchronous task
         task = generate_post_content_task.delay(theme.id, topic, post_type, topic_data)
 
         return Response(
@@ -216,7 +216,7 @@ class ThemeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def posts(self, request, pk=None):
-        """Lista posts de um tema específico"""
+        """Lists posts from a specific theme"""
         theme = get_object_or_404(Theme, pk=pk)
         posts = theme.posts.all().order_by("-created_at")
         serializer = PostSerializer(posts, many=True)
@@ -224,10 +224,10 @@ class ThemeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def status(self, request, pk=None):
-        """Verifica status de processamento do tema"""
+        """Checks theme processing status"""
         theme = get_object_or_404(Theme, pk=pk)
 
-        # Se está marcado como processando mas sem task há muito tempo, limpar
+        # If marked as processing but no task for a long time, clear it
         if theme.is_processing and theme.updated_at < timezone.now() - timedelta(
             minutes=5
         ):
@@ -251,72 +251,74 @@ class ThemeViewSet(viewsets.ModelViewSet):
 
 @extend_schema_view(
     list=extend_schema(
-        summary="Listar Posts",
-        description="Retorna lista paginada de todos os posts ordenados por data de criação.",
+        summary="List Posts",
+        description="Returns paginated list of all posts ordered by creation date.",
         tags=["Posts"],
     ),
     create=extend_schema(
-        summary="Criar Post",
-        description="Cria um novo post manualmente.",
+        summary="Create Post",
+        description="Creates a new post manually.",
         tags=["Posts"],
     ),
     retrieve=extend_schema(
-        summary="Detalhar Post",
-        description="Retorna detalhes completos de um post específico.",
+        summary="Post Details",
+        description="Returns complete details of a specific post.",
         tags=["Posts"],
     ),
     update=extend_schema(
-        summary="Atualizar Post",
-        description="Atualiza todas as informações de um post.",
+        summary="Update Post",
+        description="Updates all information of a post.",
         tags=["Posts"],
     ),
     partial_update=extend_schema(
-        summary="Atualizar Post Parcialmente",
-        description="Atualiza parcialmente as informações de um post.",
+        summary="Partially Update Post",
+        description="Partially updates post information.",
         tags=["Posts"],
     ),
     destroy=extend_schema(
-        summary="Deletar Post", description="Remove um post do sistema.", tags=["Posts"]
+        summary="Delete Post",
+        description="Removes a post from the system.",
+        tags=["Posts"],
     ),
     improve=extend_schema(
-        summary="Melhorar Post",
-        description="Inicia processo de melhoria do conteúdo do post usando IA.",
-        responses={200: "Processo de melhoria iniciado com sucesso"},
-        tags=["Posts", "IA"],
+        summary="Improve Post",
+        description="Starts post content improvement process using AI.",
+        responses={200: "Improvement process started successfully"},
+        tags=["Posts", "AI"],
     ),
     regenerate_image_prompt=extend_schema(
-        summary="Regenerar Prompt de Imagem",
-        description="Gera ou regenera o prompt para imagem de capa do artigo.",
-        responses={200: "Geração de prompt iniciada com sucesso"},
-        tags=["Posts", "IA"],
+        summary="Regenerate Image Prompt",
+        description="Generates or regenerates the prompt for article cover image.",
+        responses={200: "Prompt generation started successfully"},
+        tags=["Posts", "AI"],
     ),
     publish=extend_schema(
-        summary="Publicar Post",
-        description="Marca o post como publicado e define a data de publicação.",
-        responses={200: "Post publicado com sucesso"},
+        summary="Publish Post",
+        description="Marks the post as published and sets the publication date.",
+        responses={200: "Post published successfully"},
         tags=["Posts"],
     ),
     status=extend_schema(
-        summary="Status do Post",
-        description="Verifica o status de processamento atual do post.",
-        responses={200: "Status recuperado com sucesso"},
+        summary="Post Status",
+        description="Checks the current processing status of the post.",
+        responses={200: "Status retrieved successfully"},
         tags=["Posts"],
     ),
 )
 class PostViewSet(viewsets.ModelViewSet):
     """
-    ViewSet para gerenciamento completo de posts.
+    ViewSet for complete post management.
 
-    Os posts são o conteúdo gerado pelo sistema, podendo ser:
-    - Posts simples: conteúdo curto para redes sociais
-    - Artigos: conteúdo longo e detalhado
+    Posts are the content generated by the system, which can be:
+    - Simple posts: short content for social media
+    - Articles: long and detailed content
 
-    Funcionalidades principais:
-    - CRUD completo de posts
-    - Melhoria de conteúdo com IA
-    - Geração de prompts para imagens
-    - Controle de publicação
-    - Monitoramento de status de processamento
+    Main functionalities:
+    - Complete CRUD for posts
+    - Content improvement with AI
+    - Image prompt generation
+    - Publication control
+    - Processing status monitoring
     """
 
     permission_classes = [AllowAny]
@@ -331,15 +333,15 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def improve(self, request, pk=None):
-        """Melhora o conteúdo do post usando AI"""
+        """Improves post content using AI"""
         post = get_object_or_404(Post, pk=pk)
 
-        # Marca como processando
+        # Mark as processing
         post.is_processing = True
         post.processing_status = "processing"
         post.save()
 
-        # Inicia task assíncrona
+        # Start asynchronous task
         task = improve_post_content_task.delay(post.id)
 
         return Response(
@@ -352,22 +354,22 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def regenerate_image_prompt(self, request, pk=None):
-        """Gera ou regenera prompt de imagem de capa para artigo"""
+        """Generates or regenerates cover image prompt for article"""
         post = get_object_or_404(Post, pk=pk)
 
-        # Verifica se é um artigo
+        # Check if it's an article
         if post.post_type != "article":
             return Response(
                 {"error": "Only articles can have cover image prompt."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Marca como processando
+        # Mark as processing
         post.is_processing = True
         post.processing_status = "processing"
         post.save()
 
-        # Inicia task assíncrona
+        # Start asynchronous task
         task = regenerate_image_prompt_task.delay(post.id)
 
         is_first_generation = not post.cover_image_prompt
@@ -384,7 +386,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
-        """Publica um post"""
+        """Publishes a post"""
         post = get_object_or_404(Post, pk=pk)
 
         post.status = "published"
@@ -401,10 +403,10 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def status(self, request, pk=None):
-        """Verifica status de processamento do post"""
+        """Checks post processing status"""
         post = get_object_or_404(Post, pk=pk)
 
-        # Se está marcado como processando mas sem task há muito tempo, limpar
+        # If marked as processing but no task for a long time, clear it
         if post.is_processing and post.updated_at < timezone.now() - timedelta(
             minutes=5
         ):
@@ -426,42 +428,42 @@ class PostViewSet(viewsets.ModelViewSet):
 
 @extend_schema_view(
     check=extend_schema(
-        summary="Verificar Status de Task",
-        description="Verifica o status de processamento de uma task assíncrona do Celery.",
+        summary="Check Task Status",
+        description="Checks the processing status of a Celery asynchronous task.",
         parameters=[
             OpenApiParameter(
                 name="task_id",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
                 required=True,
-                description="ID da task do Celery para verificar",
+                description="Celery task ID to check",
             )
         ],
-        responses={200: "Status da task recuperado com sucesso"},
+        responses={200: "Task status retrieved successfully"},
         tags=["Tasks"],
     )
 )
 class TaskStatusViewSet(viewsets.ViewSet):
     """
-    ViewSet para verificação de status de tasks do Celery.
+    ViewSet for checking Celery task status.
 
-    Permite monitorar o progresso de operações assíncronas
-    como geração de tópicos, criação de posts e melhorias
-    de conteúdo que são executadas em background.
+    Allows monitoring the progress of asynchronous operations
+    like topic generation, post creation and content improvements
+    that are executed in the background.
 
-    Estados possíveis das tasks:
-    - PENDING: aguardando execução
-    - STARTED: em execução
-    - SUCCESS: concluída com sucesso
-    - FAILURE: falhou na execução
-    - RETRY: tentando novamente
+    Possible task states:
+    - PENDING: waiting for execution
+    - STARTED: in execution
+    - SUCCESS: completed successfully
+    - FAILURE: failed execution
+    - RETRY: retrying
     """
 
     permission_classes = [AllowAny]
 
     @action(detail=False, methods=["get"])
     def check(self, request):
-        """Verifica status de uma task do Celery"""
+        """Checks Celery task status"""
         task_id = request.query_params.get("task_id")
 
         if not task_id:

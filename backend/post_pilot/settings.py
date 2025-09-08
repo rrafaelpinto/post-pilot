@@ -180,9 +180,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # Override the default provider here if you want to force a specific one
 # Uncomment and set the desired provider:
-# DEFAULT_AI_PROVIDER = 'grok'
+DEFAULT_AI_PROVIDER = "grok"
 # DEFAULT_AI_PROVIDER = 'gemini'
-DEFAULT_AI_PROVIDER = "openai"
+# DEFAULT_AI_PROVIDER = "openai"
 
 # ==============================
 # DJANGO REST FRAMEWORK CONFIGURATION
@@ -212,27 +212,27 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "Post Pilot API",
     "DESCRIPTION": """
-    API completa para o sistema Post Pilot - Gerador de conteúdo com IA.
+    Complete API for the Post Pilot system - AI-powered content generator.
     
-    ## Funcionalidades principais:
+    ## Main Features:
     
-    * **Temas**: Gerencie temas para criação de conteúdo
-    * **Posts**: Crie e gerencie posts e artigos  
-    * **Dashboard**: Visualize estatísticas e resumos
-    * **Tasks**: Monitore processamento assíncrono
+    * **Topics**: Manage topics for content creation
+    * **Posts**: Create and manage posts and articles  
+    * **Dashboard**: View statistics and summaries
+    * **Tasks**: Monitor asynchronous processing
     
-    ## Recursos de IA:
+    ## AI Features:
     
-    * Geração de tópicos para temas
-    * Criação automática de posts
-    * Melhoria de conteúdo existente
-    * Geração de prompts para imagens de capa
+    * Topic generation for themes
+    * Automatic post creation
+    * Existing content improvement
+    * Cover image prompt generation
     
-    ## Monitoramento:
+    ## Monitoring:
     
-    * Status de processamento em tempo real
-    * Verificação de tasks do Celery
-    * Estatísticas do dashboard
+    * Real-time processing status
+    * Celery task verification
+    * Dashboard statistics
     """,
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,

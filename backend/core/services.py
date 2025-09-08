@@ -1,11 +1,11 @@
 import json
-import re
-import requests
 import logging
+import re
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
 import openai
+import requests
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -175,13 +175,12 @@ class AIServiceBase(ABC):
 
             if existing_titles:
                 existing_context = f"""
-                
-**IMPORTANT - Existing Topics to Avoid Duplication:**
-The following topics have already been suggested for this theme:
-{chr(10).join([f"- {title}" for title in existing_titles])}
+                **IMPORTANT - Existing Topics to Avoid Duplication:**
+                The following topics have already been suggested for this theme:
+                {chr(10).join([f"- {title}" for title in existing_titles])}
 
-Please generate NEW topics that complement these existing ones, avoiding repetition and exploring different angles of the theme.
-"""
+                Please generate NEW topics that complement these existing ones, avoiding repetition and exploring different angles of the theme.
+                """
 
         prompt = f"""
         You are an expert in technical content creation for LinkedIn, focused on developers.
@@ -782,4 +781,5 @@ class AIServiceFactory:
 def get_default_ai_service() -> AIServiceBase:
     """Get the default AI service (can be configured via settings)"""
     default_provider = getattr(settings, "DEFAULT_AI_PROVIDER", "openai")
+    logger.info(f"Default AI provider from settings: {default_provider}")
     return AIServiceFactory.create_service(default_provider)

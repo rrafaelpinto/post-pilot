@@ -132,6 +132,9 @@ def generate_post_content_task(
             }
 
         ai_service = get_default_ai_service()
+        logger.info(
+            f"Gerando conteúdo para tema '{theme.title}', tópico '{topic}', tipo '{post_type}', através do provedor '{type(ai_service).__name__}'"
+        )
         content_data = ai_service.generate_post_content(
             topic, post_type, theme.title, topic_data
         )
