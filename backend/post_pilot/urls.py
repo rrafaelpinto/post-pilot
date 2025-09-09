@@ -32,7 +32,7 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("core.urls")),  # URLs tradicionais do Django (para admin/debug)
+    # path("", include("core.urls")),  # URLs tradicionais do Django (para admin/debug)
     path("", include("core.api_urls")),  # URLs da API REST
     # Swagger/OpenAPI URLs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

@@ -683,7 +683,7 @@ class OpenAIService(AIServiceBase):
 class GrokService(AIServiceBase):
     """Service for integration with Grok (X.AI) API"""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "grok-beta"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "grok-4-latest"):
         super().__init__(
             api_key=api_key or getattr(settings, "GROK_API_KEY", ""), model=model
         )
@@ -781,5 +781,12 @@ class AIServiceFactory:
 def get_default_ai_service() -> AIServiceBase:
     """Get the default AI service (can be configured via settings)"""
     default_provider = getattr(settings, "DEFAULT_AI_PROVIDER", "openai")
-    logger.info(f"Default AI provider from settings: {default_provider}")
+    logger.info(
+        f"Using AI service provider: {AIServiceFactory.PROVIDERS[default_provider].__name__}"
+    )
     return AIServiceFactory.create_service(default_provider)
+
+
+def get_default_ai_provider_name() -> str:
+    """Get the name of the default AI provider"""
+    return getattr(settings, "DEFAULT_AI_PROVIDER", "openai")

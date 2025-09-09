@@ -68,6 +68,7 @@ class PostSerializer(serializers.ModelSerializer):
             "generated_at",
             "generation_prompt",
             "ai_model_used",
+            "ai_provider_used",
             "content_preview",
         ]
         read_only_fields = [
@@ -79,6 +80,7 @@ class PostSerializer(serializers.ModelSerializer):
             "is_processing",
             "generation_prompt",
             "ai_model_used",
+            "ai_provider_used",
             "content_preview",
         ]
 
