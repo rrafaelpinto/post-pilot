@@ -19,7 +19,6 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { Post } from '../types/post';
 import { Theme } from '../types/theme';
-import Layout from '../components/Layout';
 import { postsApi, tasksApi } from '../services/api';
 
 const PostDetailPage: React.FC = () => {
@@ -38,6 +37,8 @@ const PostDetailPage: React.FC = () => {
     const [showToast, setShowToast] = useState<boolean>(false);
     const [toastMessage, setToastMessage] = useState<string>('');
     const [toastVariant, setToastVariant] = useState<'success' | 'danger'>('success');
+    const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+    const [deleting, setDeleting] = useState<boolean>(false);
 
     // Funções para calcular métricas do conteúdo
     const calculateMetrics = (content: string) => {
@@ -211,7 +212,7 @@ const PostDetailPage: React.FC = () => {
 
         try {
             setGenerating(true);
-            const response = await fetch(`http://localhost:8000/api/posts/${post.id}/regenerate-image-prompt/`, {
+            const response = await fetch(`http://localhost:8000/api/posts/${post.id}/regenerate_image_prompt/`, {
                 method: 'POST',
             });
 
@@ -226,6 +227,26 @@ const PostDetailPage: React.FC = () => {
             showToastMessage('Erro ao gerar prompt de imagem', 'danger');
         } finally {
             setGenerating(false);
+        }
+    };
+
+    const handleDeletePost = async () => {
+        if (!post) return;
+
+        try {
+            setDeleting(true);
+            await postsApi.delete(post.id);
+
+            showToastMessage('Post excluído com sucesso!', 'success');
+
+            // Redirecionar para a página de posts após 1.5 segundos
+            setTimeout(() => {
+                navigate('/posts');
+            }, 1500);
+        } catch (err) {
+            console.error('Erro ao excluir post:', err);
+            showToastMessage('Erro ao excluir post', 'danger');
+            setDeleting(false);
         }
     };
 
@@ -247,28 +268,24 @@ const PostDetailPage: React.FC = () => {
 
     if (loading) {
         return (
-            <Layout>
-                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-                    <Spinner animation="border" role="status">
-                        <span className="visually-hidden">Carregando...</span>
-                    </Spinner>
-                </div>
-            </Layout>
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                <Spinner animation="border" role="status">
+                    <span className="visually-hidden">Carregando...</span>
+                </Spinner>
+            </div>
         );
     }
 
     if (error || !post) {
         return (
-            <Layout>
-                <Alert variant="danger" className="mt-4">
-                    {error || 'Post não encontrado'}
-                </Alert>
-            </Layout>
+            <Alert variant="danger" className="mt-4">
+                {error || 'Post não encontrado'}
+            </Alert>
         );
     }
 
     return (
-        <Layout>
+        <>
             {/* Breadcrumb e Ações */}
             <Row className="mb-3">
                 <Col xs={12}>
@@ -318,6 +335,27 @@ const PostDetailPage: React.FC = () => {
                                     >
                                         📋 Copiar Conteúdo
                                     </Dropdown.Item>
+                                    {post.seo_title && (
+                                        <Dropdown.Item
+                                            onClick={() => copyToClipboard(post.seo_title!, 'Título SEO')}
+                                        >
+                                            📋 Copiar Título SEO
+                                        </Dropdown.Item>
+                                    )}
+                                    {post.seo_description && (
+                                        <Dropdown.Item
+                                            onClick={() => copyToClipboard(post.seo_description!, 'Descrição SEO')}
+                                        >
+                                            📋 Copiar Descrição SEO
+                                        </Dropdown.Item>
+                                    )}
+                                    <Dropdown.Divider />
+                                    <Dropdown.Item
+                                        onClick={() => setShowDeleteModal(true)}
+                                        className="text-danger"
+                                    >
+                                        🗑️ Excluir Post
+                                    </Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
                         </div>
@@ -328,28 +366,11 @@ const PostDetailPage: React.FC = () => {
             <Row>
                 {/* Conteúdo Principal */}
                 <Col lg={8} md={12} className="mb-4">
-                    {/* Header do Post */}
-                    <Card className="mb-4">
-                        <Card.Body>
-                            <h1 className="mb-3">{post.title}</h1>
-                            <div className="mb-2">
-                                {getStatusBadge(post.status)}
-                                <Badge bg="secondary" className="ms-2">
-                                    {post.post_type === 'simple' ? 'Post Simples' : 'Artigo'}
-                                </Badge>
-                                {theme && (
-                                    <Badge bg="info" className="ms-2">
-                                        {theme.name}
-                                    </Badge>
-                                )}
-                            </div>
-                        </Card.Body>
-                    </Card>
 
                     {/* Conteúdo do Post */}
                     <Card className="mb-4">
                         <Card.Header>
-                            <h5 className="mb-0">Conteúdo</h5>
+                            <h5 className="mb-0">{post.title}</h5>
                         </Card.Header>
                         <Card.Body>
                             <ReactMarkdown>{post.content}</ReactMarkdown>
@@ -384,16 +405,56 @@ const PostDetailPage: React.FC = () => {
                             <Card.Body>
                                 {post.seo_title && (
                                     <div className="mb-3">
-                                        <label className="form-label fw-bold">Título SEO:</label>
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <label className="form-label fw-bold mb-0">Título SEO:</label>
+                                            <Button
+                                                variant="outline-primary"
+                                                size="sm"
+                                                onClick={() => copyToClipboard(post.seo_title!, 'Título SEO')}
+                                            >
+                                                📋 Copiar
+                                            </Button>
+                                        </div>
                                         <div className="p-2 bg-light rounded">{post.seo_title}</div>
+                                        <small className="text-muted">{post.seo_title.length}/60 caracteres</small>
                                     </div>
                                 )}
                                 {post.seo_description && (
                                     <div>
-                                        <label className="form-label fw-bold">Descrição SEO:</label>
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <label className="form-label fw-bold mb-0">Descrição SEO:</label>
+                                            <Button
+                                                variant="outline-primary"
+                                                size="sm"
+                                                onClick={() => copyToClipboard(post.seo_description!, 'Descrição SEO')}
+                                            >
+                                                📋 Copiar
+                                            </Button>
+                                        </div>
                                         <div className="p-2 bg-light rounded">{post.seo_description}</div>
+                                        <small className="text-muted">{post.seo_description.length}/160 caracteres</small>
                                     </div>
                                 )}
+                            </Card.Body>
+                        </Card>
+                    )}
+                    {/* Prompt de Imagem de Capa */}
+                    {post.cover_image_prompt && (
+                        <Card className="mb-4">
+                            <Card.Header className="d-flex justify-content-between align-items-center">
+                                <h6 className="mb-0">🖼️ Prompt de Imagem</h6>
+                                <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={() => copyToClipboard(post.cover_image_prompt!, 'Prompt de imagem')}
+                                >
+                                    📋 Copiar
+                                </Button>
+                            </Card.Header>
+                            <Card.Body>
+                                <div className="small text-muted" style={{ fontSize: '0.85rem' }}>
+                                    {post.cover_image_prompt}
+                                </div>
                             </Card.Body>
                         </Card>
                     )}
@@ -401,6 +462,40 @@ const PostDetailPage: React.FC = () => {
 
                 {/* Sidebar */}
                 <Col lg={4} md={12}>
+                    {/* Informações do Tema */}
+                    {theme && (
+                        <Card className="mb-4">
+                            <Card.Header>
+                                <h6 className="mb-0">{theme.title}</h6>
+                            </Card.Header>
+                            <Card.Body>
+                                {post.topic && (
+                                    <div className="mb-2">
+                                        <small className="text-muted">Tópico:</small>
+                                        <div>{post.topic}</div>
+                                    </div>
+                                )}
+                                {theme.stack && (
+                                    <div>
+                                        <small className="text-muted">Stack:</small>
+                                        <div>{theme.stack}</div>
+                                    </div>
+                                )}
+                                <div className="mb-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <small className="text-muted">Status:</small>
+                                        {getStatusBadge(post.status)}
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <small className="text-muted">Tipo:</small>
+                                        <Badge bg="secondary">
+                                            {post.post_type === 'simple' ? 'Post Simples' : 'Artigo'}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            </Card.Body>
+                        </Card>
+                    )}
                     {/* Métricas */}
                     <Card className="mb-4">
                         <Card.Header>
@@ -460,32 +555,6 @@ const PostDetailPage: React.FC = () => {
                         </Card.Body>
                     </Card>
 
-                    {/* Informações do Tema */}
-                    {theme && (
-                        <Card className="mb-4">
-                            <Card.Header>
-                                <h6 className="mb-0">Tema</h6>
-                            </Card.Header>
-                            <Card.Body>
-                                <div className="mb-2">
-                                    <strong>{theme.name}</strong>
-                                </div>
-                                {post.topic && (
-                                    <div className="mb-2">
-                                        <small className="text-muted">Tópico:</small>
-                                        <div>{post.topic}</div>
-                                    </div>
-                                )}
-                                {theme.stack && (
-                                    <div>
-                                        <small className="text-muted">Stack:</small>
-                                        <div>{theme.stack}</div>
-                                    </div>
-                                )}
-                            </Card.Body>
-                        </Card>
-                    )}
-
                     {/* Informações de IA */}
                     {(post.ai_provider_used || post.ai_model_used) && (
                         <Card className="mb-4">
@@ -532,27 +601,6 @@ const PostDetailPage: React.FC = () => {
                             <Card.Body>
                                 <div className="small text-muted" style={{ fontSize: '0.85rem' }}>
                                     {post.generation_prompt}
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    )}
-
-                    {/* Prompt de Imagem de Capa */}
-                    {post.cover_image_prompt && (
-                        <Card className="mb-4">
-                            <Card.Header className="d-flex justify-content-between align-items-center">
-                                <h6 className="mb-0">🖼️ Prompt de Imagem</h6>
-                                <Button
-                                    variant="outline-primary"
-                                    size="sm"
-                                    onClick={() => copyToClipboard(post.cover_image_prompt!, 'Prompt de imagem')}
-                                >
-                                    📋
-                                </Button>
-                            </Card.Header>
-                            <Card.Body>
-                                <div className="small text-muted" style={{ fontSize: '0.85rem' }}>
-                                    {post.cover_image_prompt}
                                 </div>
                             </Card.Body>
                         </Card>
@@ -622,6 +670,52 @@ const PostDetailPage: React.FC = () => {
                 </Modal.Footer>
             </Modal>
 
+            {/* Modal de Confirmação de Exclusão */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirmar Exclusão</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="d-flex align-items-start">
+                        <div className="text-warning me-3" style={{ fontSize: '2rem' }}>
+                            ⚠️
+                        </div>
+                        <div>
+                            <h5 className="mb-2">Tem certeza que deseja excluir este post?</h5>
+                            <p className="mb-2">
+                                <strong>"{post?.title}"</strong>
+                            </p>
+                            <p className="text-muted mb-0">
+                                Esta ação não pode ser desfeita. O post será removido permanentemente do sistema.
+                            </p>
+                        </div>
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button
+                        variant="secondary"
+                        onClick={() => setShowDeleteModal(false)}
+                        disabled={deleting}
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="danger"
+                        onClick={handleDeletePost}
+                        disabled={deleting}
+                    >
+                        {deleting ? (
+                            <>
+                                <Spinner animation="border" size="sm" className="me-2" />
+                                Excluindo...
+                            </>
+                        ) : (
+                            '🗑️ Excluir Post'
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
             {/* Toast de Notificação */}
             <ToastContainer position="bottom-end" className="p-3">
                 <Toast
@@ -636,7 +730,7 @@ const PostDetailPage: React.FC = () => {
                     </Toast.Body>
                 </Toast>
             </ToastContainer>
-        </Layout>
+        </>
     );
 };
 

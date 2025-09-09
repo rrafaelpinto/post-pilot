@@ -1,6 +1,6 @@
 export interface Theme {
     id: number;
-    name: string;
+    title: string;
     description?: string;
     stack?: string;
     created_at: string;

@@ -33,6 +33,8 @@ const ThemeDetailPage: React.FC = () => {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastVariant, setToastVariant] = useState<'success' | 'danger'>('success');
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -129,6 +131,27 @@ const ThemeDetailPage: React.FC = () => {
         setShowToast(true);
     };
 
+    const handleDeleteTheme = async () => {
+        if (!theme) return;
+
+        try {
+            setDeleting(true);
+            await themesApi.delete(theme.id);
+            showToastMessage('Tema removido com sucesso!', 'success');
+            setShowDeleteModal(false);
+
+            // Redirecionar para a página de temas após 1 segundo
+            setTimeout(() => {
+                navigate('/themes');
+            }, 1000);
+        } catch (error) {
+            showToastMessage('Erro ao remover tema', 'danger');
+            console.error('Error deleting theme:', error);
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('pt-BR', {
             day: '2-digit',
@@ -210,9 +233,18 @@ const ThemeDetailPage: React.FC = () => {
                                     )}
                                 </Button>
                             )}
-                            <Link to="/themes" className="btn btn-outline-secondary">
-                                Voltar
-                            </Link>
+                            <div className="d-flex gap-2">
+                                <Link to="/themes" className="btn btn-outline-secondary">
+                                    Voltar
+                                </Link>
+                                <Button
+                                    variant="outline-danger"
+                                    onClick={() => setShowDeleteModal(true)}
+                                    size="sm"
+                                >
+                                    🗑️ Remover Tema
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </Col>
@@ -425,6 +457,44 @@ const ThemeDetailPage: React.FC = () => {
                             </>
                         ) : (
                             'Gerar Post'
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal para confirmar deleção */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirmar Remoção</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Alert variant="warning">
+                        <Alert.Heading>⚠️ Atenção!</Alert.Heading>
+                        <p>
+                            Você está prestes a remover o tema <strong>"{theme?.title}"</strong>.
+                        </p>
+                        <p className="mb-0">
+                            Esta ação também removerá <strong>todos os posts</strong> associados a este tema e <strong>não pode ser desfeita</strong>.
+                        </p>
+                    </Alert>
+                    <p>Tem certeza que deseja continuar?</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="danger"
+                        onClick={handleDeleteTheme}
+                        disabled={deleting}
+                    >
+                        {deleting ? (
+                            <>
+                                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                                Removendo...
+                            </>
+                        ) : (
+                            'Sim, Remover Tema'
                         )}
                     </Button>
                 </Modal.Footer>
