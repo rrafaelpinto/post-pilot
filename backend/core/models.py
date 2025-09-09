@@ -165,6 +165,12 @@ class Post(models.Model):
     ai_model_used = models.CharField(
         max_length=50, blank=True, verbose_name="AI Model Used"
     )
+    ai_provider_used = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="AI Provider Used",
+        help_text="AI provider used to generate content (openai, grok, gemini)",
+    )
 
     class Meta:
         verbose_name = "Post"

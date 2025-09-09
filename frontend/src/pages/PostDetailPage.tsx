@@ -486,6 +486,43 @@ const PostDetailPage: React.FC = () => {
                         </Card>
                     )}
 
+                    {/* Informações de IA */}
+                    {(post.ai_provider_used || post.ai_model_used) && (
+                        <Card className="mb-4">
+                            <Card.Header>
+                                <h6 className="mb-0">🤖 Informações de IA</h6>
+                            </Card.Header>
+                            <Card.Body>
+                                {post.ai_provider_used && (
+                                    <div className="mb-2">
+                                        <small className="text-muted d-block">Provedor:</small>
+                                        <Badge
+                                            bg={
+                                                post.ai_provider_used === 'openai' ? 'success' :
+                                                    post.ai_provider_used === 'grok' ? 'warning' :
+                                                        post.ai_provider_used === 'gemini' ? 'info' : 'secondary'
+                                            }
+                                            className="text-capitalize"
+                                        >
+                                            {
+                                                post.ai_provider_used === 'openai' ? 'OpenAI' :
+                                                    post.ai_provider_used === 'grok' ? 'Grok (X.AI)' :
+                                                        post.ai_provider_used === 'gemini' ? 'Google Gemini' :
+                                                            post.ai_provider_used
+                                            }
+                                        </Badge>
+                                    </div>
+                                )}
+                                {post.ai_model_used && (
+                                    <div>
+                                        <small className="text-muted d-block">Modelo:</small>
+                                        <code className="text-dark">{post.ai_model_used}</code>
+                                    </div>
+                                )}
+                            </Card.Body>
+                        </Card>
+                    )}
+
                     {/* Prompt de Geração */}
                     {post.generation_prompt && (
                         <Card className="mb-4">

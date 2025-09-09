@@ -42,7 +42,7 @@ Sophisticated LinkedIn content generation platform built with **React TypeScript
 | Provider | Model | Strengths | Status |
 |----------|-------|-----------|--------|
 | **OpenAI** | GPT-4o, GPT-4o-mini | Excellent overall quality, wide compatibility | ✅ Fully supported |
-| **Grok (X.AI)** | grok-beta | Updated knowledge, created by X (Twitter) | ✅ Implemented (beta access required) |
+| **Grok (X.AI)** | grok-4-latest | Updated knowledge, created by X (Twitter) | ✅ Implemented |
 | **Google Gemini** | gemini-1.5-pro | Good Google ecosystem integration | ✅ Implemented |
 
 ## 🛠️ Technology Stack & Architecture Decisions
@@ -74,7 +74,7 @@ Sophisticated LinkedIn content generation platform built with **React TypeScript
 | Provider | Model | Integration Pattern | Use Case |
 |----------|-------|-------------------|----------|
 | **OpenAI** | GPT-4o, GPT-4o-mini | REST API + Retry Logic | Primary content generation |
-| **Grok (X.AI)** | grok-beta | Factory Pattern | Alternative provider with X ecosystem knowledge |
+| **Grok (X.AI)** | grok-4-latest | Factory Pattern | Alternative provider with X ecosystem knowledge |
 | **Google Gemini** | gemini-1.5-pro | Service Abstraction | Google-specific content optimization |
 
 ## 📋 Prerequisites
@@ -191,7 +191,7 @@ OPENAI_TEMPERATURE=0.7
 
 # Grok (X.AI) Configuration  
 GROK_API_KEY=xai-your_grok_key_here
-GROK_MODEL=grok-beta
+GROK_MODEL=grok-4-latest
 
 # Google Gemini Configuration
 GEMINI_API_KEY=your_gemini_key_here

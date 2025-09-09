@@ -129,9 +129,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# OpenAI Configuration
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
 # Celery Configuration
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
@@ -180,8 +177,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # Override the default provider here if you want to force a specific one
 # Uncomment and set the desired provider:
-DEFAULT_AI_PROVIDER = "grok"
-# DEFAULT_AI_PROVIDER = 'gemini'
+# DEFAULT_AI_PROVIDER = "grok"
+DEFAULT_AI_PROVIDER = "gemini"
 # DEFAULT_AI_PROVIDER = "openai"
 
 # ==============================

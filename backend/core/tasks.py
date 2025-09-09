@@ -4,7 +4,7 @@ from celery import shared_task
 from django.utils import timezone
 
 from .models import Post, Theme
-from .services import get_default_ai_service
+from .services import get_default_ai_service, get_default_ai_provider_name
 
 logger = logging.getLogger(__name__)
 
@@ -132,8 +132,9 @@ def generate_post_content_task(
             }
 
         ai_service = get_default_ai_service()
+        ai_provider_name = get_default_ai_provider_name()
         logger.info(
-            f"Gerando conteúdo para tema '{theme.title}', tópico '{topic}', tipo '{post_type}', através do provedor '{type(ai_service).__name__}'"
+            f"Gerando conteúdo para tema '{theme.title}', tópico '{topic}', tipo '{post_type}', através do provedor '{ai_provider_name}'"
         )
         content_data = ai_service.generate_post_content(
             topic, post_type, theme.title, topic_data
@@ -151,7 +152,12 @@ def generate_post_content_task(
             "status": "generated",
             "generated_at": timezone.now(),
             "generation_prompt": f"Tópico: {topic}, Tipo: {post_type}",
-            "ai_model_used": "gpt-4o" if post_type == "article" else "gpt-4o-mini",
+            "ai_model_used": getattr(
+                ai_service,
+                "model",
+                "gpt-4o" if post_type == "article" else "gpt-4o-mini",
+            ),
+            "ai_provider_used": ai_provider_name,
         }
 
         # Para artigos, adicionar o post promocional se disponível
@@ -195,6 +201,7 @@ def improve_post_content_task(self, post_id, user_id=None):
         post.save()
 
         ai_service = get_default_ai_service()
+        ai_provider_name = get_default_ai_provider_name()
         improvement_data = ai_service.improve_post_content(
             current_content=post.content,
             post_title=post.title,
@@ -212,13 +219,15 @@ def improve_post_content_task(self, post_id, user_id=None):
 
                 # Atualizar informações de geração
                 if post.generation_prompt:
-                    post.generation_prompt += (
-                        f" | Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
-                    )
+                    post.generation_prompt += f" | Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')} via {ai_provider_name}"
                 else:
-                    post.generation_prompt = (
-                        f"Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')}"
-                    )
+                    post.generation_prompt = f"Melhorado em: {timezone.now().strftime('%d/%m/%Y %H:%M')} via {ai_provider_name}"
+
+                # Atualizar informações do modelo AI se não estiverem definidas
+                if not post.ai_provider_used:
+                    post.ai_provider_used = ai_provider_name
+                if not post.ai_model_used:
+                    post.ai_model_used = getattr(ai_service, "model", "Unknown")
 
                 post.save()
 
@@ -305,6 +314,7 @@ def regenerate_image_prompt_task(self, post_id, user_id=None):
         action_type = "gerado" if is_first_generation else "regenerado"
 
         ai_service = get_default_ai_service()
+        ai_provider_name = get_default_ai_provider_name()
         image_data = ai_service.regenerate_cover_image_prompt(
             post_title=post.title,
             topic=post.topic,
@@ -322,14 +332,24 @@ def regenerate_image_prompt_task(self, post_id, user_id=None):
             # Atualizar informações de geração
             timestamp = timezone.now().strftime("%d/%m/%Y %H:%M")
             if is_first_generation:
-                generation_info = f"Imagem gerada em: {timestamp}"
+                generation_info = (
+                    f"Imagem gerada em: {timestamp} via {ai_provider_name}"
+                )
             else:
-                generation_info = f"Imagem regenerada em: {timestamp}"
+                generation_info = (
+                    f"Imagem regenerada em: {timestamp} via {ai_provider_name}"
+                )
 
             if post.generation_prompt:
                 post.generation_prompt += f" | {generation_info}"
             else:
                 post.generation_prompt = generation_info
+
+            # Atualizar informações do modelo AI se não estiverem definidas
+            if not post.ai_provider_used:
+                post.ai_provider_used = ai_provider_name
+            if not post.ai_model_used:
+                post.ai_model_used = getattr(ai_service, "model", "Unknown")
 
             post.save()
 
