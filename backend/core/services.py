@@ -716,7 +716,7 @@ class GrokService(AIServiceBase):
 class GeminiService(AIServiceBase):
     """Service for integration with Google Gemini API"""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-1.5-pro"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.0-flash"):
         super().__init__(
             api_key=api_key or getattr(settings, "GEMINI_API_KEY", ""), model=model
         )
